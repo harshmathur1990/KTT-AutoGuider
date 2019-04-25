@@ -5,7 +5,7 @@
 #include <iostream>
 #include "NIDAQmx.h"
 
-extern float64 VoltageData[1];
+extern double VoltageData[1];
 extern TaskHandle DAQHandle;
 
 int initDAQ();
@@ -23,7 +23,7 @@ int initDAQ(){
 
 
 int setVoltages(){
-    VoltageData[0] = float64(20.0)/15.0;
+    VoltageData[0] = static_cast<double>(20.0)/15.0;
     std::cout << "Applying voltage for X : " << DAQmxWriteAnalogF64(DAQHandle, 1, 1, 0.0, DAQmx_Val_GroupByChannel, VoltageData, NULL, NULL) << std::endl;
     return 0;
 }

@@ -86,6 +86,9 @@
 				</MakeCommands>
 			</Target>
 		</Build>
+		<Unit filename="C:/Program Files (x86)/National Instruments/NI-DAQ/DAQmx ANSI C Dev/include/NIDAQmx.h">
+			<Option target="FPVoltageController"/>
+		</Unit>
 		<Unit filename="C:/Users/IIAP/CLionProjects/FPVoltageController/daqutils.cpp">
 			<Option target="FPVoltageController"/>
 		</Unit>
