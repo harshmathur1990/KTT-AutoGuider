@@ -11,7 +11,9 @@ set(CMAKE_CXX_COMPILER_ID "MSVC")
 
 # The include file search paths:
 set(CMAKE_CXX_TARGET_INCLUDE_PATH
-  "C:/Program Files (x86)/National Instruments/NI-DAQ/DAQmx ANSI C Dev/include"
+  "C:/PROGRA~2/NATION~1/NI-DAQ/DAQMXA~1/include"
+  "C:/Windows/System32"
+  "C:/PROGRA~2/NATION~1/NI-DAQ/DAQMXA~1/lib/msvc"
   )
 
 # Targets to which this target links.

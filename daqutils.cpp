@@ -1,15 +1,4 @@
-#ifndef DAQUTILS_H
-#define DAQUTILS_H
-#endif
-
-#include <iostream>
-#include "NIDAQmx.h"
-
-extern double VoltageData[1];
-extern TaskHandle DAQHandle;
-
-int initDAQ();
-int setVoltages();
+#include "daqutils.h"
 
 
 int initDAQ(){

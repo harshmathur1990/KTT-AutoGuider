@@ -6,9 +6,9 @@
 
 #IncludeRegexTransform: 
 
-C:/Program Files (x86)/National Instruments/NI-DAQ/DAQmx ANSI C Dev/include/NIDAQmx.h
+C:/PROGRA~2/NATION~1/NI-DAQ/DAQMXA~1/include/NIDAQmx.h
 
-C:/Users/IIAP/CLionProjects/FPVoltageController/daqutils.cpp
+C:/Users/IIAP/CLionProjects/FPVoltageController/daqutils.h
 iostream
 -
 NIDAQmx.h
@@ -17,6 +17,6 @@ C:/Users/IIAP/CLionProjects/FPVoltageController/NIDAQmx.h
 C:/Users/IIAP/CLionProjects/FPVoltageController/main.cpp
 iostream
 -
-daqutils.cpp
-C:/Users/IIAP/CLionProjects/FPVoltageController/daqutils.cpp
+daqutils.h
+C:/Users/IIAP/CLionProjects/FPVoltageController/daqutils.h
 

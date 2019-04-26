@@ -207,6 +207,9 @@ FPVoltageController_BINARY_DIR:STATIC=C:/Users/IIAP/CLionProjects/FPVoltageContr
 //Value Computed by CMake
 FPVoltageController_SOURCE_DIR:STATIC=C:/Users/IIAP/CLionProjects/FPVoltageController
 
+//Path to a library.
+NIDAQMX_LIBRARY:FILEPATH=NIDAQMX_LIBRARY-NOTFOUND
+
 
 ########################
 # INTERNAL cache entries

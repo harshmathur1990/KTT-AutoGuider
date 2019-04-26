@@ -24,7 +24,9 @@
 				<Option type="1"/>
 				<Option compiler="msvc8"/>
 				<Compiler>
-					<Add directory="C:/Program Files (x86)/National Instruments/NI-DAQ/DAQmx ANSI C Dev/include"/>
+					<Add directory="C:/PROGRA~2/NATION~1/NI-DAQ/DAQMXA~1/include"/>
+					<Add directory="C:/Windows/System32"/>
+					<Add directory="C:/PROGRA~2/NATION~1/NI-DAQ/DAQMXA~1/lib/msvc"/>
 					<Add directory="C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.14.26428\ATLMFC\include"/>
 					<Add directory="C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.14.26428\include"/>
 					<Add directory="C:\Program Files (x86)\Windows Kits\NETFXSDK\4.6.1\include\um"/>
@@ -48,7 +50,9 @@
 				<Option type="1"/>
 				<Option compiler="msvc8"/>
 				<Compiler>
-					<Add directory="C:/Program Files (x86)/National Instruments/NI-DAQ/DAQmx ANSI C Dev/include"/>
+					<Add directory="C:/PROGRA~2/NATION~1/NI-DAQ/DAQMXA~1/include"/>
+					<Add directory="C:/Windows/System32"/>
+					<Add directory="C:/PROGRA~2/NATION~1/NI-DAQ/DAQMXA~1/lib/msvc"/>
 					<Add directory="C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.14.26428\ATLMFC\include"/>
 					<Add directory="C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.14.26428\include"/>
 					<Add directory="C:\Program Files (x86)\Windows Kits\NETFXSDK\4.6.1\include\um"/>
@@ -86,10 +90,10 @@
 				</MakeCommands>
 			</Target>
 		</Build>
-		<Unit filename="C:/Program Files (x86)/National Instruments/NI-DAQ/DAQmx ANSI C Dev/include/NIDAQmx.h">
+		<Unit filename="C:/Users/IIAP/CLionProjects/FPVoltageController/daqutils.cpp">
 			<Option target="FPVoltageController"/>
 		</Unit>
-		<Unit filename="C:/Users/IIAP/CLionProjects/FPVoltageController/daqutils.cpp">
+		<Unit filename="C:/Users/IIAP/CLionProjects/FPVoltageController/daqutils.h">
 			<Option target="FPVoltageController"/>
 		</Unit>
 		<Unit filename="C:/Users/IIAP/CLionProjects/FPVoltageController/main.cpp">

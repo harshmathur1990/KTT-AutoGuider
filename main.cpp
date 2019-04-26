@@ -1,5 +1,8 @@
 #include <iostream>
-#include "daqutils.cpp"
+#include "daqutils.h"
+
+double VoltageData[1];
+TaskHandle DAQHandle;
 
 
 int main() {
