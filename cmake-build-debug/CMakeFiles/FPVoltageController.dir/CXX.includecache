@@ -8,15 +8,13 @@
 
 C:/PROGRA~2/NATION~1/NI-DAQ/DAQMXA~1/include/NIDAQmx.h
 
+C:/Users/IIAP/CLionProjects/FPVoltageController/daqutils.cpp
+daqutils.h
+C:/Users/IIAP/CLionProjects/FPVoltageController/daqutils.h
+
 C:/Users/IIAP/CLionProjects/FPVoltageController/daqutils.h
 iostream
 -
 NIDAQmx.h
 C:/Users/IIAP/CLionProjects/FPVoltageController/NIDAQmx.h
-
-C:/Users/IIAP/CLionProjects/FPVoltageController/main.cpp
-iostream
--
-daqutils.h
-C:/Users/IIAP/CLionProjects/FPVoltageController/daqutils.h
 

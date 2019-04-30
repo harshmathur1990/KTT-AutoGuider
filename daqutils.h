@@ -12,6 +12,6 @@ extern double VoltageData[1];
 extern TaskHandle DAQHandle;
 
 int initDAQ();
-int setVoltages();
+int setVoltages(double voltage);
 
 #endif //FPVOLTAGECONTROLLER_DAQUTILS_H
