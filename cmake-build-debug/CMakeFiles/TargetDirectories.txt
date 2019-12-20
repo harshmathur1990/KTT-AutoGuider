@@ -1,3 +1,0 @@
-C:/Users/IIAP/CLionProjects/FPVoltageController/cmake-build-debug/CMakeFiles/FPVoltageController.dir
-C:/Users/IIAP/CLionProjects/FPVoltageController/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/Users/IIAP/CLionProjects/FPVoltageController/cmake-build-debug/CMakeFiles/rebuild_cache.dir
