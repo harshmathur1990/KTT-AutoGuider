@@ -24,7 +24,7 @@ int main() {
         std::cout<<"The value of sample voltages to be get are: "<< numOfVoltageSamples<<std::endl;
         float64 *readArray = (float64*)malloc(numOfVoltageSamples * sizeof(float64));
         int32 *samplesReadperChannel;
-        int status = getVoltage(&readArray, numOfVoltageSamples, &samplesReadperChannel);
+        int status = getVoltage(readArray, numOfVoltageSamples, samplesReadperChannel);
         std::cout<<"The status from reading input samples is "<<status<<std::endl;
     }
     return 0;
