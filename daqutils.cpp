@@ -20,7 +20,7 @@ int initDAQAOVoltageChan(){
 }
 
 int initDAQAIChan(){
-    int status = DAQmxCreateAIVoltageChan(DAQHandle, "Dev1/ai0", "", DAQmx_Val_RSE, -5, 5, DAQmx_Val_Volts, NULL);
+    int status = DAQmxCreateAIVoltageChan(DAQHandle, "Dev1/ai0", "", DAQmx_Val_Diff, -5, 5, DAQmx_Val_Volts, NULL);
     std::cout << "Creating Analog Input : " << status << std::endl;
     return status;
 }
@@ -32,7 +32,7 @@ int setVoltages(double voltage){
     return status;
 }
 
-int getVoltage(float64 *readArray, int readArraySize, int32 *samplesReadperChannel){
+int getVoltage(float64 *readArray, int32 *samplesReadperChannel, int readArraySize){
     int status = DAQmxReadAnalogF64(DAQHandle, readArraySize, 1, DAQmx_Val_GroupByChannel, readArray, readArraySize, samplesReadperChannel, NULL);
     std::cout << "Fetching voltage for X : " << status << std::endl;
     return status;
