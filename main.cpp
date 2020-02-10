@@ -23,7 +23,10 @@ int main() {
         numOfVoltageSamples = atoi(input.c_str());
         std::cout<<"The value of sample voltages to be get are: "<< numOfVoltageSamples<<std::endl;
         float64 *readArray = NULL;
-        readArray = (float64*)malloc(numOfVoltageSamples * sizeof(float64));
+        readArray = (float64*)calloc(numOfVoltageSamples, sizeof(float64));
+        for (int i=0; i < numOfVoltageSamples; i++) {
+            std::cout << "Initial Voltage[" << i << "] = " << readArray[i] << std::endl;
+        }
         int32 samplesReadperChannel = 0;
         int status = getVoltage(readArray, &samplesReadperChannel, numOfVoltageSamples);
         std::cout<<"The status from reading input samples is "<<status<<std::endl;

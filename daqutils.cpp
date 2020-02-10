@@ -20,7 +20,7 @@ int initDAQAOVoltageChan(){
 }
 
 int initDAQAIChan(){
-    int status = DAQmxCreateAIVoltageChan(DAQHandle, "Dev1/ai0", "", DAQmx_Val_Diff, -5, 5, DAQmx_Val_Volts, NULL);
+    int status = DAQmxCreateAIVoltageChan(DAQHandle, "Dev1/ai0", "", DAQmx_Val_RSE, -5, 5, DAQmx_Val_Volts, NULL);
     std::cout << "Creating Analog Input : " << status << std::endl;
     return status;
 }
