@@ -6,6 +6,7 @@
 #define FPVOLTAGECONTROLLER_DAQUTILS_H
 
 #include <iostream>
+#include <string>
 #include "NIDAQmx.h"
 
 extern double VoltageData[1];
