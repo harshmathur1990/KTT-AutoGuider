@@ -14,19 +14,39 @@ int main() {
     initialiseDAQHandle();
     std::string input;
     int numOfVoltageSamples;
+    int reading;
+    int i;
+    char *token = NULL;
     while (1) {
-        std::cout << "Enter e for exit or Number of sample Voltages to get: " << std::endl;
+        std::cout << "Enter e for exit or Number of sample Voltages to get with the reading: " << std::endl;
         getline (std::cin, input);
         if (input[0] == 'e' || input[0] == 'E') {
             break;
         }
-        numOfVoltageSamples = atoi(input.c_str());
+        token = std::strtok(const_cast<char *>(input.c_str()), " ");
+        i = 0;
+        reading = 0;
+        while (token != NULL && i < 2) {
+            switch (i) {
+                case 0:
+                    numOfVoltageSamples = atoi(token);
+                    break;
+                case 1:
+                    reading = atoi(token);
+                    break;
+                default:
+                    break;
+            }
+            token = std::strtok(NULL, " ");
+            i += 1;
+        }
         float64 *readArray = NULL;
         readArray = (float64*)calloc( numOfVoltageSamples, sizeof(float64));
         int32 samplesReadperChannel = 0;
         int status = getVoltage(readArray, &samplesReadperChannel, numOfVoltageSamples);
         if (status == 0) {
-            std::cout<<"The number of samples per channel read are " << samplesReadperChannel << std::endl;
+            std::cout<<"Number of samples per channel: " << samplesReadperChannel << std::endl;
+            std::cout<<"Reading: " << reading << std::endl;
             for (int i=0; i <  samplesReadperChannel; i++) {
                 std::cout << "Voltage[" << 0 << "] = " << readArray[i] * 1000 << " mVolts"<< std::endl;
             }
