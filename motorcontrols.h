@@ -13,8 +13,6 @@ int CreateControllerConnection(int ComPortNum);
 
 int closeControllerConnection();
 
-int closedLoop();
-
 int testMotor();
 
 int setMotorFrequency(int motorNum, int frequency);

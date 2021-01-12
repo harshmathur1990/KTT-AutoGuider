@@ -4,6 +4,7 @@
 #include "motorcontrols.h"
 #include "ra.h"
 #include "dec.h"
+#include "autoguider.h"
 
 //double VoltageData[1];
 

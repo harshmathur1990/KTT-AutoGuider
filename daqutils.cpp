@@ -64,9 +64,19 @@ int getVoltage(float64 *readArray, int32 *samplesReadPerChannel, int numberOfSam
 }
 
 int testChannel(const char deviceName[]) {
-    createDAQTask();
-    initDAQAIChan(deviceName);
-    startDAQTask();
+    int status;
+    status = createDAQTask();
+    if (status != 0) {
+        return -1;
+    }
+    status = initDAQAIChan(deviceName);
+    if (status != 0) {
+        return -2;
+    }
+    status = startDAQTask();
+    if (status != 0) {
+        return -3;
+    }
     std::string input;
     int numOfVoltageSamples;
     int reading;
@@ -114,6 +124,13 @@ int testChannel(const char deviceName[]) {
         free(readArray);
     }
 
-    stopDAQTask();
-    clearDAQTask();
+    status = stopDAQTask();
+    if (status != 0) {
+        return -4;
+    }
+    status = clearDAQTask();
+    if (status != 0) {
+        return -5;
+    }
+    return 0;
 }

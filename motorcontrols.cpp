@@ -23,10 +23,6 @@ int closeControllerConnection() {
     return status;
 }
 
-int closedLoop(){
-    return 0;
-}
-
 int setMotorFrequency(int motorNum, int frequency) {
     std::string writeWord = std::to_string(motorNum).append("F").append(std::to_string(frequency));
     int status = writeToPort(writeWord.c_str());
