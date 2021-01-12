@@ -71,6 +71,7 @@ int testChannel(const char deviceName[]) {
     }
     status = initDAQAIChan(deviceName);
     if (status != 0) {
+        clearDAQTask();
         return -2;
     }
     status = startDAQTask();
