@@ -6,4 +6,5 @@
 
 int testRa() {
     testChannel("Dev1/ai0");
+    return 0;
 }

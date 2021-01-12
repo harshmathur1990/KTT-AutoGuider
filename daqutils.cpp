@@ -41,11 +41,11 @@ int stopDAQTask() {
 //    return status;
 //}
 
-int initDAQAIChan(const char [] deviceName){
+int initDAQAIChan(const char deviceName[]){
     int status_0 = DAQmxCreateAIVoltageChan(DAQHandle, deviceName, "", DAQmx_Val_Diff, -5, 5, DAQmx_Val_Volts, NULL);
 //    int status_0 = DAQmxCreateAIVoltageChan(DAQHandle, "Dev1/ai0", "", DAQmx_Val_Diff, -5, 5, DAQmx_Val_Volts, NULL);
     std::string status_1_str = status_0 == 0?"True":"False";
-    std::cout << "Creating Analog Input 0: " << status_1_str << std::endl;
+    std::cout << "Creating Analog Input: " << status_1_str << std::endl;
     return status_0;
 }
 
@@ -63,11 +63,11 @@ int getVoltage(float64 *readArray, int32 *samplesReadPerChannel, int numberOfSam
     return status;
 }
 
-int testChannel(const char [] deviceName) {
+int testChannel(const char deviceName[]) {
     createDAQTask();
     initDAQAIChan(deviceName);
     startDAQTask();
-
+    std::string input;
     int numOfVoltageSamples;
     int reading;
     int i;
@@ -103,7 +103,7 @@ int testChannel(const char [] deviceName) {
         float64 *readArray = NULL;
         readArray = (float64*)calloc( numOfVoltageSamples, sizeof(float64));
         int32 samplesReadperChannel = 0;
-        int status = getVoltage(readArray, &samplesReadperChannel, numOfVoltageSamples);
+        int status = getVoltage(readArray, &samplesReadperChannel, numOfVoltageSamples, numOfVoltageSamples);
         if (status == 0) {
             std::cout<<"Number of samples per channel: " << samplesReadperChannel << std::endl;
             std::cout<<"Reading: " << reading << std::endl;

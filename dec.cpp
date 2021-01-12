@@ -6,4 +6,5 @@
 
 int testDec() {
     testChannel("Dev1/ai1");
+    return 0;
 }

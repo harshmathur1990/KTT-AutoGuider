@@ -7,5 +7,5 @@
 
 #include "daqutils.h"
 
-int testDec()
+int testDec();
 #endif //NIDAQVOLTAGEGENERATOR_DEC_H

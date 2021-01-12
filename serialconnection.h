@@ -16,6 +16,6 @@ int setTimeout(int readIntervalTimeout, int readTotalTimeoutConstant, int readTo
 
 int closeSerialConnection();
 
-int writeToPort(const char [] dataWord);
+int writeToPort(const char dataWord[]);
 
 #endif //NIDAQVOLTAGEGENERATOR_MOTORCONTROL_H

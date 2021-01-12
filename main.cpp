@@ -1,14 +1,15 @@
 #include <iostream>
 #include <string>
 #include <stdlib.h>
-#include "daqutils.h"
+#include "motorcontrols.h"
+#include "ra.h"
+#include "dec.h"
 
 //double VoltageData[1];
 
 int main() {
     std::string input;
     int mode;
-    std::cout << "Hello, World!" << std::endl;
     while (1) {
         std::cout << "Mode Select (Enter e for exit): " << std::endl;
         std::cout << "Enter 1 for RA test." << std::endl;
@@ -22,19 +23,19 @@ int main() {
         if (input[0] == 'm' || input[0] == 'M') {
             continue;
         }
-        mode = atoi(token);
+        mode = std::atoi(input.c_str());
         switch (mode) {
             case 1:
-                test_ra();
+                testRa();
                 break;
             case 2:
-                test_dec();
+                testDec();
                 break;
             case 3:
-                test_motor();
+                testMotor();
                 break;
             case 4:
-                closed_loop();
+                closedLoop();
                 break;
             default:
                 break;

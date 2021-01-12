@@ -5,7 +5,22 @@
 #ifndef NIDAQVOLTAGEGENERATOR_MOTORCONTROLS_H
 #define NIDAQVOLTAGEGENERATOR_MOTORCONTROLS_H
 
-int CreateMotorConnection();
+#include <iostream>
 
+#include "serialconnection.h"
+
+int CreateControllerConnection(int ComPortNum);
+
+int closeControllerConnection();
+
+int closedLoop();
+
+int testMotor();
+
+int setMotorFrequency(int motorNum, int frequency);
+
+int setMotorCount(int motorNum, int direction, int counts);
+
+int exitMotor(int motorNum);
 
 #endif //NIDAQVOLTAGEGENERATOR_MOTORCONTROLS_H

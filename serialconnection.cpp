@@ -18,7 +18,7 @@ int createSerialConnection(int comPortNum, int baudRate, int byteSize, int stopB
     serialParams.DCBlength = sizeof(serialParams);
 
     GetCommState(serialHandle, &serialParams);
-    serialParams.BaudRate = baudrate;
+    serialParams.BaudRate = baudRate;
     serialParams.ByteSize = byteSize;
     serialParams.StopBits = stopBits;
     serialParams.Parity = parity;
@@ -43,7 +43,7 @@ int closeSerialConnection() {
     return status == true?0:-1;
 }
 
-int writeToPort(const char [] dataWord) {
+int writeToPort(const char dataWord[]) {
     DWORD dwBytesToWrite = (DWORD)strlen(dataWord);
     DWORD dwBytesWritten = 0;
     bool bErrorFlag = WriteFile(
