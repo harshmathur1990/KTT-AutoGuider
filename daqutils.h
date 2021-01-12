@@ -9,14 +9,17 @@
 #include <string>
 #include "NIDAQmx.h"
 
-extern double VoltageData[1];
+//extern double VoltageData[1];
 extern TaskHandle DAQHandle;
 
 int createDAQTask();
-int initialiseDAQHandle();
-int initDAQAOVoltageChan();
-int initDAQAIChan();
-int setVoltages(double voltage);
-int getVoltage(float64 *readArray, int32 *samplesReadperChannel, int readArraySize);
+int clearDAQTask();
+int startDAQTask();
+int stopDAQTask();
+//int initDAQAOVoltageChan();
+int initDAQAIChan(const char [] deviceName);
+//int setVoltages(double voltage);
+int getVoltage(float64 *readArray, int32 *samplesReadPerChannel, int numberOfSamplesPerChannel, int readArraySize);
+int testChannel(const char[] deviceName);
 
 #endif //FPVOLTAGECONTROLLER_DAQUTILS_H

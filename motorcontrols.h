@@ -1,0 +1,11 @@
+//
+// Created by harsh on 1/12/21.
+//
+
+#ifndef NIDAQVOLTAGEGENERATOR_MOTORCONTROLS_H
+#define NIDAQVOLTAGEGENERATOR_MOTORCONTROLS_H
+
+int CreateMotorConnection();
+
+
+#endif //NIDAQVOLTAGEGENERATOR_MOTORCONTROLS_H
