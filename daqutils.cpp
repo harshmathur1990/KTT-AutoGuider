@@ -84,7 +84,7 @@ int testChannel(const char deviceName[]) {
     int i;
     char *token = NULL;
     while (1) {
-        std::cout << "Enter e for exit or m or switch mode or Number of sample Voltages to get with the reading: " << std::endl;
+        std::cout << "Enter e for exit or m to switch mode or Number of sample Voltages to get with the reading: " << std::endl;
         getline (std::cin, input);
         if (input[0] == 'e' || input[0] == 'E') {
             stopDAQTask();
@@ -113,12 +113,12 @@ int testChannel(const char deviceName[]) {
         }
         float64 *readArray = NULL;
         readArray = (float64*)calloc( numOfVoltageSamples, sizeof(float64));
-        int32 samplesReadperChannel = 0;
-        int status = getVoltage(readArray, &samplesReadperChannel, numOfVoltageSamples, numOfVoltageSamples);
+        int32 samplesReadPerChannel = 0;
+        int status = getVoltage(readArray, &samplesReadPerChannel, numOfVoltageSamples, numOfVoltageSamples);
         if (status == 0) {
-            std::cout<<"Number of samples per channel: " << samplesReadperChannel << std::endl;
+            std::cout<<"Number of samples per channel: " << samplesReadPerChannel << std::endl;
             std::cout<<"Reading: " << reading << std::endl;
-            for (int i=0; i <  samplesReadperChannel; i++) {
+            for (int i=0; i <  samplesReadPerChannel; i++) {
                 std::cout << "Voltage[" << 0 << "] = " << readArray[i] * 1000 << " mVolts"<< std::endl;
             }
         }

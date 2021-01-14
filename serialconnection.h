@@ -4,9 +4,10 @@
 
 #ifndef NIDAQVOLTAGEGENERATOR_MOTORCONTROL_H
 #define NIDAQVOLTAGEGENERATOR_MOTORCONTROL_H
-
+#include <iostream>
 #include <windows.h>
 #include <string>
+#include <stdlib.h>
 
 extern HANDLE serialHandle;
 
@@ -16,6 +17,10 @@ int setTimeout(int readIntervalTimeout, int readTotalTimeoutConstant, int readTo
 
 int closeSerialConnection();
 
-int writeToPort(const char dataWord[]);
+int writeToPort(std::string dataWord);
+
+int readFromPort(char *dataWord, DWORD nNumberOfBytesToRead, DWORD* NumberOfBytesRead);
+
+int testSerialConnection();
 
 #endif //NIDAQVOLTAGEGENERATOR_MOTORCONTROL_H

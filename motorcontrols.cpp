@@ -9,8 +9,8 @@ int CreateControllerConnection(int ComPortNum) {
             ComPortNum,
             115200,
             8,
-            1,
-            0);
+            ONESTOPBIT,
+            NOPARITY);
     std::string status_str = status == 0?"True":"False";
     std::cout << "Creating Controller Connection: " << status_str << std::endl;
     return status;
@@ -25,7 +25,7 @@ int closeControllerConnection() {
 
 int setMotorFrequency(int motorNum, int frequency) {
     std::string writeWord = std::to_string(motorNum).append("F").append(std::to_string(frequency));
-    int status = writeToPort(writeWord.c_str());
+    int status = writeToPort(writeWord);
     std::string status_str = status == 0?"True":"False";
     std::cout << "Wrote to Motor: " << status_str << std::endl;
     return status;
@@ -34,7 +34,7 @@ int setMotorFrequency(int motorNum, int frequency) {
 int setMotorCount(int motorNum, int direction, int counts) {
     std::string directionString = direction == 1?"+":"-";
     std::string writeWord = std::to_string(motorNum).append(directionString).append(std::to_string(counts));
-    int status = writeToPort(writeWord.c_str());
+    int status = writeToPort(writeWord);
     std::string status_str = status == 0?"True":"False";
     std::cout << "Wrote to Motor: " << status_str << std::endl;
     return status;
@@ -42,7 +42,7 @@ int setMotorCount(int motorNum, int direction, int counts) {
 
 int exitMotor(int motorNum) {
     std::string writeWord = std::to_string(motorNum).append("Q");
-    int status = writeToPort(writeWord.c_str());
+    int status = writeToPort(writeWord);
     std::string status_str = status == 0?"True":"False";
     std::cout << "Wrote to Motor: " << status_str << std::endl;
     return status;
@@ -54,6 +54,7 @@ int testMotor() {
     getline(std::cin, input);
     int comPortNum = std::atoi(input.c_str());
     int status = CreateControllerConnection(comPortNum);
+    std::string quitString;
     if (status == 0) {
         while (1) {
             std::string motorNumString;
@@ -82,6 +83,8 @@ int testMotor() {
                 int direction = std::atoi(directionString.c_str());
                 int counts = std::atoi(countString.c_str());
                 setMotorCount(motorNum, direction, counts);
+                std::cout<<"Press Enter to quit the motor"<<std::endl;
+                getline(std::cin, motorNumString);
                 exitMotor(motorNum);
             }
         }
