@@ -5,6 +5,6 @@
 #include "ra.h"
 
 int testRa() {
-    testChannel("Dev1/ai0");
+    testChannel("Dev1/ai2");
     return 0;
 }

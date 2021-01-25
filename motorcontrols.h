@@ -19,6 +19,10 @@ int setMotorFrequency(int motorNum, int frequency);
 
 int setMotorCount(int motorNum, int direction, int counts);
 
+int enableMotor(int motorNum);
+
+int disableMotor(int motorNum);
+
 int exitMotor(int motorNum);
 
 #endif //NIDAQVOLTAGEGENERATOR_MOTORCONTROLS_H

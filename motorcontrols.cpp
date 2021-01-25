@@ -40,6 +40,22 @@ int setMotorCount(int motorNum, int direction, int counts) {
     return status;
 }
 
+int enableMotor(int motorNum) {
+    std::string writeWord = std::to_string(motorNum).append(std::string("E"));
+    int status = writeToPort(writeWord);
+    std::string status_str = status == 0?"True":"False";
+    std::cout << "Wrote to Motor: " << status_str << std::endl;
+    return status;
+}
+
+int disableMotor(int motorNum) {
+    std::string writeWord = std::to_string(motorNum).append(std::string("D"));
+    int status = writeToPort(writeWord);
+    std::string status_str = status == 0?"True":"False";
+    std::cout << "Wrote to Motor: " << status_str << std::endl;
+    return status;
+}
+
 int exitMotor(int motorNum) {
     std::string writeWord = std::to_string(motorNum).append("Q");
     int status = writeToPort(writeWord);
@@ -70,9 +86,10 @@ int testMotor() {
             if (motorNumString[0] == 'm' || motorNumString[0] == 'M') {
                 break;
             }
+            int motorNum = std::atoi(motorNumString.c_str());
+            enableMotor(motorNum);
             std::cout<<"Enter the Motor Frequency: "<<std::endl;
             getline(std::cin, frequencyString);
-            int motorNum = std::atoi(motorNumString.c_str());
             int frequency = std::atoi((frequencyString.c_str()));
             int statusMotorFrequency = setMotorFrequency(motorNum, frequency);
             if (statusMotorFrequency == 0) {
@@ -86,6 +103,7 @@ int testMotor() {
                 std::cout<<"Press Enter to quit the motor"<<std::endl;
                 getline(std::cin, motorNumString);
                 exitMotor(motorNum);
+                disableMotor(motorNum);
             }
         }
         closeControllerConnection();
