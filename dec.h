@@ -8,4 +8,7 @@
 #include "daqutils.h"
 
 int testDec();
+
+int monitorDEC();
+
 #endif //NIDAQVOLTAGEGENERATOR_DEC_H

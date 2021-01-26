@@ -9,8 +9,16 @@
 #include "daqutils.h"
 #include "motorcontrols.h"
 
+extern bool runClosedLoop;
+
 int closedLoop();
 
+int closedLoopWorker();
+
 int calibrateRA();
+
+int calibrateDEC();
+
+int calibrateChannel(int motorNum, const char deviceName[]);
 
 #endif //FPVOLTAGECONTROLLER_AUTOGUIDER_H

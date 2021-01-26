@@ -4,12 +4,33 @@
 
 #include "autoguider.h"
 
+bool runClosedLoop;
+
+int closedLoopWorker() {
+
+}
+
 int closedLoop(){
+    std::string slopeString, constantString, referenceVoltageString, numberOfVoltageSamplesString;
+    float64 slope, constant, referenceVoltage;
+    int64 numberOfVoltageSamples;
+    std::cout<<"Enter the slope of the calibration line equation:"<<std::endl;
+    getline(std::cin, slopeString);
+    std::cout<<"Enter the constant of the calibration line equation:"<<std::endl;
+    getline(std::cin, constantString);
+    std::cout<<"Enter the reference voltage:"<<std::endl;
+    getline(std::cin, referenceVoltageString);
+    slope = atof(slopeString.c_str());
+    constant = atof(constantString.c_str());
+    referenceVoltage = atof(referenceVoltageString.c_str());
+    std::cout<<"Enter the number of voltage samples:"<<std::endl;
+    getline(std::cin, numberOfVoltageSamplesString);
+    numberOfVoltageSamples = atoi(numberOfVoltageSamplesString.c_str());
     return 0;
 }
 
-int calibrateRA() {
-    int comPortNum, motorNum = 2, frequency, count, step, direction, numOfVoltageSamples;
+int calibrateChannel(int motorNum, const char deviceName[]) {
+    int comPortNum, frequency, count, step, direction, numOfVoltageSamples;
     int32 samplesReadPerChannel = 0;
     std::string input, numOfVoltageSamplesString;
     std::cout<<"Enter the COM Port number: "<<std::endl;
@@ -56,7 +77,6 @@ int calibrateRA() {
         closeControllerConnection();
         return -4;
     }
-    const char deviceName[] = "Dev1/ai2";
     int statusInitDaQChain = initDAQAIChan(deviceName);
     if (statusInitDaQChain != 0) {
         std::cout<<"Failed to Create DaQ Task"<<std::endl;
@@ -135,4 +155,16 @@ int calibrateRA() {
     stopDAQTask();
     clearDAQTask();
     return 0;
+}
+
+int calibrateRA() {
+    int motorNum = 2;
+    const char deviceName[] = "Dev1/ai2";
+    return calibrateChannel(motorNum, deviceName);
+}
+
+int calibrateDEC() {
+    int motorNum = 1;
+    const char deviceName[] = "Dev1/ai1";
+    return calibrateChannel(motorNum, deviceName);
 }
