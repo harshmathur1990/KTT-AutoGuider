@@ -7,4 +7,6 @@
 #include "daqutils.h"
 
 int testRa();
+
+int monitorRA();
 #endif //NIDAQVOLTAGEGENERATOR_RA_H

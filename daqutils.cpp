@@ -63,6 +63,64 @@ int getVoltage(float64 *readArray, int32 *samplesReadPerChannel, int numberOfSam
     return status;
 }
 
+int monitorChannel(const char deviceName[]) {
+    std::string totalTimeInSecondsString, stepInMiliSecondsString, numberOfSamplesString;
+    std::cout<<"How many seconds data to collect:"<<std::endl;
+    getline (std::cin, totalTimeInSecondsString);
+    int totalTimeInSeconds = atoi(totalTimeInSecondsString.c_str());
+    std::cout<<"Enter the interval between each step in miliseconds:"<<std::endl;
+    getline (std::cin, stepInMiliSecondsString);
+    int stepInMiliSeconds = atoi(stepInMiliSecondsString.c_str());
+
+    int statusDaQTask = createDAQTask();
+    if (statusDaQTask != 0) {
+        std::cout<<"Failed to Create DaQ Task"<<std::endl;
+        return -1;
+    }
+    int statusInitDaQChain = initDAQAIChan(deviceName);
+    if (statusInitDaQChain != 0) {
+        std::cout<<"Failed to Create DaQ Task"<<std::endl;
+        clearDAQTask();
+        return -2;
+    }
+    int statusStartDaQTask = startDAQTask();
+    if (statusStartDaQTask != 0) {
+        std::cout<<"Failed to Start DaQ Task"<<std::endl;
+        clearDAQTask();
+        return -3;
+    }
+    std::cout<<"Enter number of samples to take:"<<std::endl;
+    getline (std::cin, numberOfSamplesString);
+    int numberOfSamples = atoi(numberOfSamplesString.c_str());
+    int elapsedTime = 0;
+    float64 *readArray = NULL;
+    int32 samplesReadPerChannel = 0;
+    while(elapsedTime < totalTimeInSeconds*1000) {
+        readArray = (float64*)calloc( numberOfSamples, sizeof(float64));
+        int statusReadVoltage = getVoltage(readArray, &samplesReadPerChannel, numberOfSamples, numberOfSamples);
+        if (statusReadVoltage != 0) {
+            std::cout<<"Failed to get Voltage"<<std::endl;
+            stopDAQTask();
+            clearDAQTask();
+            free(readArray);
+            return -7;
+        }
+        std::cout<<elapsedTime;
+        for (int i=0; i <  samplesReadPerChannel; i++) {
+
+            std::cout << "  " << readArray[i] * 1000;
+        }
+        std::cout<<std::endl;
+        Sleep(stepInMiliSeconds);
+        elapsedTime += stepInMiliSeconds;
+        free(readArray);
+    }
+    std::cout<<"Data Recorded Successfully."<<std::endl;
+    stopDAQTask();
+    clearDAQTask();
+    return 0;
+}
+
 int testChannel(const char deviceName[]) {
     int status;
     status = createDAQTask();

@@ -76,13 +76,14 @@ int calibrateRA() {
     std::cout<<"Enter number of Voltage Samples to Get:"<<std::endl;
     getline(std::cin, numOfVoltageSamplesString);
     numOfVoltageSamples = std::atoi(numOfVoltageSamplesString.c_str());
-    float64 *readArray = (float64*)calloc( numOfVoltageSamples, sizeof(float64));
+    float64 *readArray = NULL;
     float64 timeToCompleteMovement = step * 1000/frequency;
     float64 goBackTime = count * 1000/frequency;
     float loopUpdateTime = 100;
     int totalSteps = 0;
     int statusSetMotorCount = 0;
     while(totalSteps < count) {
+        readArray = (float64*)calloc( numOfVoltageSamples, sizeof(float64));
         int statusReadVoltage = getVoltage(readArray, &samplesReadPerChannel, numOfVoltageSamples, numOfVoltageSamples);
         if (statusReadVoltage != 0) {
             std::cout<<"Failed to get Voltage"<<std::endl;
@@ -91,6 +92,7 @@ int calibrateRA() {
             closeControllerConnection();
             stopDAQTask();
             clearDAQTask();
+            free(readArray);
             return -7;
         }
         std::cout<<totalSteps;
@@ -107,11 +109,13 @@ int calibrateRA() {
             closeControllerConnection();
             stopDAQTask();
             clearDAQTask();
+            free(readArray);
             return -8;
         }
-        Sleep(timeToCompleteMovement * 2);
-        Sleep(loopUpdateTime);
+        Sleep(timeToCompleteMovement * 3);
+//        Sleep(loopUpdateTime);
         totalSteps += step;
+        free(readArray);
     }
     statusSetMotorCount = setMotorCount(motorNum, -direction, totalSteps);
     if (statusSetMotorCount != 0) {

@@ -8,3 +8,8 @@ int testRa() {
     testChannel("Dev1/ai2");
     return 0;
 }
+
+int monitorRA() {
+    monitorChannel("Dev1/ai2");
+    return 0;
+}

@@ -17,8 +17,9 @@ int main() {
         std::cout << "Enter 2 for DEC test." << std::endl;
         std::cout << "Enter 3 for Motor test." << std::endl;
         std::cout << "Enter 4 for Serial loopback test." << std::endl;
-        std::cout << "Enter 5 for RA close loop calibration" << std::endl;
-        std::cout << "Enter 6 for Close loop operation." << std::endl;
+        std::cout << "Enter 5 for RA close loop calibration." << std::endl;
+        std::cout << "Enter 6 for Monitoring RA voltage drift." << std::endl;
+        std::cout << "Enter 7 for Close loop operation." << std::endl;
         getline(std::cin, input);
         if (input[0] == 'e' || input[0] == 'E') {
             break;
@@ -44,6 +45,8 @@ int main() {
                 calibrateRA();
                 break;
             case 6:
+                monitorRA();
+            case 7:
                 closedLoop();
         }
     }
