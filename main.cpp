@@ -21,7 +21,8 @@ int main() {
         std::cout << "Enter 6 for DEC close loop calibration." << std::endl;
         std::cout << "Enter 7 for Monitoring RA voltage drift." << std::endl;
         std::cout << "Enter 8 for Monitoring DEC voltage drift." << std::endl;
-        std::cout << "Enter 9 for Close loop operation." << std::endl;
+        std::cout << "Enter 9 for Monitoring RA and DEC voltage drift." << std::endl;
+        std::cout << "Enter 10 for Close loop operation." << std::endl;
         getline(std::cin, input);
         if (input[0] == 'e' || input[0] == 'E') {
             break;
@@ -30,6 +31,7 @@ int main() {
             continue;
         }
         mode = std::atoi(input.c_str());
+        std::cout<<"Mode Selected:"<<mode<<std::endl;
         switch (mode) {
             case 1:
                 testRa();
@@ -54,7 +56,11 @@ int main() {
                 break;
             case 8:
                 monitorDEC();
+                break;
             case 9:
+                monitorRaAndDEC();
+                break;
+            case 10:
                 closedLoop();
                 break;
         }

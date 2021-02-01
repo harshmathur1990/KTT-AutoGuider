@@ -63,7 +63,7 @@ int getVoltage(float64 *readArray, int32 *samplesReadPerChannel, int numberOfSam
     return status;
 }
 
-int monitorChannel(const char deviceName[]) {
+int monitorChannel(const char deviceName[], int numOfChannels) {
     std::string totalTimeInSecondsString, stepInMiliSecondsString, numberOfSamplesString;
     std::cout<<"How many seconds data to collect:"<<std::endl;
     getline (std::cin, totalTimeInSecondsString);
@@ -96,8 +96,8 @@ int monitorChannel(const char deviceName[]) {
     float64 *readArray = NULL;
     int32 samplesReadPerChannel = 0;
     while(elapsedTime < totalTimeInSeconds*1000) {
-        readArray = (float64*)calloc( numberOfSamples, sizeof(float64));
-        int statusReadVoltage = getVoltage(readArray, &samplesReadPerChannel, numberOfSamples, numberOfSamples);
+        readArray = (float64*)calloc( numberOfSamples * numOfChannels, sizeof(float64));
+        int statusReadVoltage = getVoltage(readArray, &samplesReadPerChannel, numberOfSamples, numberOfSamples * numOfChannels);
         if (statusReadVoltage != 0) {
             std::cout<<"Failed to get Voltage"<<std::endl;
             stopDAQTask();
@@ -106,8 +106,7 @@ int monitorChannel(const char deviceName[]) {
             return -7;
         }
         std::cout<<elapsedTime;
-        for (int i=0; i <  samplesReadPerChannel; i++) {
-
+        for (int i=0; i <  samplesReadPerChannel * numOfChannels; i++) {
             std::cout << "  " << readArray[i] * 1000;
         }
         std::cout<<std::endl;

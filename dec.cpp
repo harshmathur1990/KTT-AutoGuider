@@ -10,6 +10,6 @@ int testDec() {
 }
 
 int monitorDEC() {
-    monitorChannel("Dev1/ai1");
+    monitorChannel("Dev1/ai1", 1);
     return 0;
 }

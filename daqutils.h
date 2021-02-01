@@ -22,6 +22,6 @@ int initDAQAIChan(const char deviceName[]);
 //int setVoltages(double voltage);
 int getVoltage(float64 *readArray, int32 *samplesReadPerChannel, int numberOfSamplesPerChannel, int readArraySize);
 int testChannel(const char deviceName[]);
-int monitorChannel(const char deviceName[]);
+int monitorChannel(const char deviceName[], int numOfChannels);
 
 #endif //FPVOLTAGECONTROLLER_DAQUTILS_H

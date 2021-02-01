@@ -10,6 +10,6 @@ int testRa() {
 }
 
 int monitorRA() {
-    monitorChannel("Dev1/ai2");
+    monitorChannel("Dev1/ai2", 1);
     return 0;
 }
