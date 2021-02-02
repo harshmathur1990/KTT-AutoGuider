@@ -9,21 +9,25 @@ bool runClosedLoop;
 DWORD WINAPI closedLoopThread(LPVOID lparam) {
     std::string input;
     worker_params &workerParams = *(worker_params*)lparam;
-    float64 *readArray=NULL, meanRA, meanDEC, refCountRA, refCountDEC, countRA, countDEC, timeToCompleteMovement=0;
-    int64 decCorrrection, raCorrection, RA=0, DEC=0, direction = 1, statusSetMotorCount=0;
+    float64 *readArray=NULL, *meanRA=NULL, *meanDEC=NULL, refCountRA, refCountDEC, countRA, countDEC, timeToCompleteMovement=0, prevMeanRA=0, currMeanRA=0, prevMeanDEC=0, currMeanDEC=0;
+    int64 decCorrrection, raCorrection, RA=0, DEC=0, direction = 1, statusSetMotorCount=0, clock;
     const int64 raMotorNum = 2, decMotorNum = 1;
     int32 samplesReadPerChannel=0;
     refCountRA = (workerParams.raReferenceVoltage - workerParams.raConstant) / workerParams.raSlope;
     refCountDEC = (workerParams.decReferenceVoltage - workerParams.decConstant) / workerParams.decSlope;
     std::cout<<"Loop Update time (seconds):"<<workerParams.loopUpdateTimeInSeconds<<std::endl;
+    std::cout<<"Polling time (miliseconds):"<<workerParams.pollingTimeInMiliSeconds<<std::endl;
     std::cout << "ReferenceVoltage RA: " << workerParams.raReferenceVoltage << std::endl;
     std::cout << "refCount RA: " << refCountRA << std::endl;
     std::cout << "ReferenceVoltage DEC: " << workerParams.decReferenceVoltage << std::endl;
     std::cout << "refCount DEC: " << refCountDEC << std::endl;
+    const int64 counter = workerParams.loopUpdateTimeInSeconds * 1000 / workerParams.pollingTimeInMiliSeconds;
+    meanRA = (float64*) calloc(counter, sizeof(float64));
+    meanDEC = (float64*) calloc(counter, sizeof(float64));
+    clock = 0;
     while (1) {
-        Sleep(workerParams.loopUpdateTimeInSeconds * 1000);
-        meanRA = 0;
-        meanDEC = 0;
+        meanRA[clock] = 0;
+        meanDEC[clock] = 0;
         readArray = (float64*)calloc( workerParams.numberOfVoltageSamples * 2, sizeof(float64));
         int statusReadVoltage = getVoltage(readArray, &samplesReadPerChannel, workerParams.numberOfVoltageSamples, workerParams.numberOfVoltageSamples * 2);
         if (statusReadVoltage != 0) {
@@ -33,55 +37,66 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
             return -1;
         }
         for (int i=0; i <  samplesReadPerChannel * 2; i+=2) {
-            meanRA += readArray[i+1] * 1000;
-            meanDEC += readArray[i] * 1000;
+            meanRA[clock] += readArray[i+1] * 1000;
+            meanDEC[clock] += readArray[i] * 1000;
         }
-        meanRA /= samplesReadPerChannel;
-        meanDEC /= samplesReadPerChannel;
-        std::cout << "Mean Voltage RA: " << meanRA << std::endl;
-        std::cout << "Mean Voltage DEC: " << meanDEC << std::endl;
-        countRA = (meanRA - workerParams.raConstant) / workerParams.raSlope;
-        std::cout << "Count RA: " << countRA << std::endl;
-        raCorrection = countRA - refCountRA;
-        std::cout << "Correction RA:" << raCorrection << std::endl;
-        countDEC = (meanDEC - workerParams.decConstant) / workerParams.decSlope;
-        std::cout << "Count DEC: " << countDEC << std::endl;
-        decCorrrection = countDEC - refCountDEC;
-        std::cout << "Correction DEC:" << decCorrrection << std::endl;
-//        if (abs(raCorrection) > maxCorrectionPerSec * loopUpdateTimeInSeconds) {
-//            RA = maxCorrectionPerSec * loopUpdateTimeInSeconds;
-//        }
-//        else {
-//            RA = abs(raCorrection);
-//        }
-        RA = abs(raCorrection);
-        DEC = abs(decCorrrection);
-        std::cout << "Applying counts RA:" << RA << std::endl;
-        std::cout << "Applying counts DEC:" << DEC << std::endl;
-        direction = sgn(raCorrection) * sgn(workerParams.raReferenceVoltage);
-        statusSetMotorCount = setMotorCount(raMotorNum, direction, RA);
+        meanRA[clock] /= samplesReadPerChannel;
+        meanDEC[clock] /= samplesReadPerChannel;
+//        std::cout << "Mean Voltage RA: " << meanRA[clock] << std::endl;
+//        std::cout << "Mean Voltage DEC: " << meanDEC[clock] << std::endl;
+        if (clock == counter) {
+            prevMeanRA = currMeanRA;
+            prevMeanDEC = currMeanDEC;
+            currMeanRA = 0;
+            currMeanDEC = 0;
+            for (int j=0; j<counter;j++) {
+                currMeanRA += meanRA[j];
+                currMeanDEC += meanDEC[j];
+            }
+            currMeanRA /= counter;
+            currMeanDEC /= counter;
+            std::cout << "Mean Voltage RA: " << currMeanRA << std::endl;
+            std::cout << "Mean Voltage DEC: " << currMeanDEC << std::endl;
+            countRA = (currMeanRA - workerParams.raConstant) / workerParams.raSlope;
+            std::cout << "Count RA: " << countRA << std::endl;
+            raCorrection = countRA - refCountRA;
+            std::cout << "Correction RA:" << raCorrection << std::endl;
+            countDEC = (currMeanDEC - workerParams.decConstant) / workerParams.decSlope;
+            std::cout << "Count DEC: " << countDEC << std::endl;
+            decCorrrection = countDEC - refCountDEC;
+            std::cout << "Correction DEC:" << decCorrrection << std::endl;
+            RA = abs(raCorrection);
+            DEC = abs(decCorrrection);
+            direction = sgn(raCorrection) * sgn(workerParams.raReferenceVoltage);
+            std::cout << "Applying counts RA:" << direction * RA << std::endl;
+            statusSetMotorCount = setMotorCount(raMotorNum, direction, RA);
 //        timeToCompleteMovement = RA / workerParams.raFrequency;
-        if (statusSetMotorCount != 0) {
-            free(readArray);
-            workerParams.statusWorker = -2;
-            return -2;
-        }
-        direction = sgn(decCorrrection) * sgn(workerParams.decReferenceVoltage);
-        statusSetMotorCount = setMotorCount(decMotorNum, direction, DEC);
+            if (statusSetMotorCount != 0) {
+                free(readArray);
+                workerParams.statusWorker = -2;
+                return -2;
+            }
+            direction = sgn(decCorrrection) * sgn(workerParams.decReferenceVoltage) * -1;
+            std::cout << "Applying counts DEC:" << direction * DEC << std::endl;
+            statusSetMotorCount = setMotorCount(decMotorNum, direction, DEC);
 //        timeToCompleteMovement = RA / workerParams.raFrequency;
-        if (statusSetMotorCount != 0) {
-            free(readArray);
-            workerParams.statusWorker = -2;
-            return -2;
+            if (statusSetMotorCount != 0) {
+                free(readArray);
+                workerParams.statusWorker = -2;
+                return -2;
+            }
+            clock = -1;
         }
+        clock += 1;
         free(readArray);
+        Sleep(workerParams.pollingTimeInMiliSeconds);
     }
 }
 
 int closedLoop(){
-    std::string input, slopeString, constantString, referenceVoltageString, numberOfVoltageSamplesString, frequencyString, loopUpdateTimeInSecondsString, maxVoltageChangeInMiliVoltsPerSecString;
+    std::string input, slopeString, constantString, referenceVoltageString, numberOfVoltageSamplesString, frequencyString, loopUpdateTimeInSecondsString, pollingTimeInMiliSecondsString, maxVoltageChangeInMiliVoltsPerSecString;
     float64 raSlope, decSlope, raConstant, decConstant, raReferenceVoltage, decReferenceVoltage, maxVoltageChangeInMiliVoltsPerSecRA, maxVoltageChangeInMiliVoltsPerSecDEC;
-    int64 numberOfVoltageSamples, raFrequency, decFrequency, comPortNum, raMotorNum=2, decMotorNum = 1, loopUpdateTimeInSeconds;
+    int64 numberOfVoltageSamples, raFrequency, decFrequency, comPortNum, raMotorNum=2, decMotorNum = 1, loopUpdateTimeInSeconds, pollingTimeInMiliSeconds;
     const char deviceName[] = "Dev1/ai1:2";
     std::cout<<"Enter the Slope of the RA calibration line equation:"<<std::endl;
     getline(std::cin, slopeString);
@@ -176,6 +191,9 @@ int closedLoop(){
     std::cout<<"Enter the loop update time in seconds:"<<std::endl;
     getline(std::cin, loopUpdateTimeInSecondsString);
     loopUpdateTimeInSeconds = atoi(loopUpdateTimeInSecondsString.c_str());
+    std::cout<<"Enter the polling time in miliseconds:"<<std::endl;
+    getline(std::cin, pollingTimeInMiliSecondsString);
+    pollingTimeInMiliSeconds = atoi(pollingTimeInMiliSecondsString.c_str());
     std::cout<<"Enter the max permissible voltage change per second in RA:"<<std::endl;
     getline(std::cin, maxVoltageChangeInMiliVoltsPerSecString);
     maxVoltageChangeInMiliVoltsPerSecRA = atoi(maxVoltageChangeInMiliVoltsPerSecString.c_str());
@@ -196,6 +214,7 @@ int closedLoop(){
     workerParams.raFrequency = raFrequency;
     workerParams.decFrequency = decFrequency;
     workerParams.loopUpdateTimeInSeconds = loopUpdateTimeInSeconds;
+    workerParams.pollingTimeInMiliSeconds = pollingTimeInMiliSeconds;
     workerParams.maxVoltageChangeInMiliVoltsPerSecRA = maxVoltageChangeInMiliVoltsPerSecRA;
     workerParams.maxVoltageChangeInMiliVoltsPerSecDEC = maxVoltageChangeInMiliVoltsPerSecDEC;
     workerParams.statusWorker = 0;

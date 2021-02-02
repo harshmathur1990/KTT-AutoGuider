@@ -59,7 +59,9 @@ int initDAQAIChan(const char deviceName[]){
 int getVoltage(float64 *readArray, int32 *samplesReadPerChannel, int numberOfSamplesPerChannel, int readArraySize){
     int status = DAQmxReadAnalogF64(DAQHandle, numberOfSamplesPerChannel, 1, DAQmx_Val_GroupByScanNumber, readArray, readArraySize, samplesReadPerChannel, NULL);
     std::string status_str = status == 0?"True":"False";
-    std::cout << "Fetched voltage : " << status_str << std::endl;
+    if (status != 0) {
+        std::cout << "Fetched voltage : " << status_str << std::endl;
+    }
     return status;
 }
 

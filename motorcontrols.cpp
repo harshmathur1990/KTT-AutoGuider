@@ -12,14 +12,18 @@ int CreateControllerConnection(int ComPortNum) {
             ONESTOPBIT,
             NOPARITY);
     std::string status_str = status == 0?"True":"False";
-    std::cout << "Creating Controller Connection: " << status_str << std::endl;
+    if (status != 0) {
+        std::cout << "Creating Controller Connection: " << status_str << std::endl;
+    }
     return status;
 }
 
 int closeControllerConnection() {
     int status = closeSerialConnection();
     std::string status_str = status == 0?"True":"False";
-    std::cout << "Closing Controller Connection: " << status_str << std::endl;
+    if (status != 0) {
+        std::cout << "Closing Controller Connection: " << status_str << std::endl;
+    }
     return status;
 }
 
@@ -27,7 +31,9 @@ int setMotorFrequency(int motorNum, int frequency) {
     std::string writeWord = std::to_string(motorNum).append("F").append(std::to_string(frequency));
     int status = writeToPort(writeWord);
     std::string status_str = status == 0?"True":"False";
-    std::cout << "Wrote to Motor: " << status_str << std::endl;
+    if (status != 0) {
+        std::cout << "Wrote to Motor: " << status_str << std::endl;
+    }
     return status;
 }
 
@@ -36,7 +42,9 @@ int setMotorCount(int motorNum, int direction, int counts) {
     std::string writeWord = std::to_string(motorNum).append(directionString).append(std::to_string(counts));
     int status = writeToPort(writeWord);
     std::string status_str = status == 0?"True":"False";
-    std::cout << "Wrote to Motor: " << status_str << std::endl;
+    if (status != 0) {
+        std::cout << "Wrote to Motor: " << status_str << std::endl;
+    }
     return status;
 }
 
@@ -44,7 +52,9 @@ int enableMotor(int motorNum) {
     std::string writeWord = std::to_string(motorNum).append(std::string("E"));
     int status = writeToPort(writeWord);
     std::string status_str = status == 0?"True":"False";
-    std::cout << "Wrote to Motor: " << status_str << std::endl;
+    if (status != 0) {
+        std::cout << "Wrote to Motor: " << status_str << std::endl;
+    }
     return status;
 }
 
@@ -52,7 +62,9 @@ int disableMotor(int motorNum) {
     std::string writeWord = std::to_string(motorNum).append(std::string("D"));
     int status = writeToPort(writeWord);
     std::string status_str = status == 0?"True":"False";
-    std::cout << "Wrote to Motor: " << status_str << std::endl;
+    if (status != 0) {
+        std::cout << "Wrote to Motor: " << status_str << std::endl;
+    }
     return status;
 }
 
@@ -60,7 +72,9 @@ int exitMotor(int motorNum) {
     std::string writeWord = std::to_string(motorNum).append("Q");
     int status = writeToPort(writeWord);
     std::string status_str = status == 0?"True":"False";
-    std::cout << "Wrote to Motor: " << status_str << std::endl;
+    if (status != 0) {
+        std::cout << "Wrote to Motor: " << status_str << std::endl;
+    }
     return status;
 }
 

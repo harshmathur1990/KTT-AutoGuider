@@ -23,7 +23,7 @@ int calibrateChannel(int motorNum, const char deviceName[]);
 
 typedef struct {
     float64 raSlope, raConstant, raReferenceVoltage, decSlope, decConstant, decReferenceVoltage;
-    int64 numberOfVoltageSamples, raFrequency, decFrequency, statusWorker, loopUpdateTimeInSeconds, maxVoltageChangeInMiliVoltsPerSecRA, maxVoltageChangeInMiliVoltsPerSecDEC
+    int64 numberOfVoltageSamples, raFrequency, decFrequency, statusWorker, loopUpdateTimeInSeconds, maxVoltageChangeInMiliVoltsPerSecRA, maxVoltageChangeInMiliVoltsPerSecDEC, pollingTimeInMiliSeconds
     ;
 } worker_params;
 
