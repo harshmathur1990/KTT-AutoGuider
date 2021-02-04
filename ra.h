@@ -5,6 +5,7 @@
 #ifndef NIDAQVOLTAGEGENERATOR_RA_H
 #define NIDAQVOLTAGEGENERATOR_RA_H
 #include "daqutils.h"
+#include "utilheaders.h"
 
 int testRa();
 

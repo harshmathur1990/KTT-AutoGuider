@@ -41,8 +41,16 @@ int stopDAQTask() {
 //    return status;
 //}
 
-int initDAQAIChan(const char deviceName[]){
-    int status_0 = DAQmxCreateAIVoltageChan(DAQHandle, deviceName, "", DAQmx_Val_Diff, -5, 5, DAQmx_Val_Volts, NULL);
+int initDAQAIChan(const char deviceName[], int mode){
+    int32 terminalConfig;
+    if (mode == NORMALMODE)
+        terminalConfig = DAQmx_Val_Diff;
+    else
+        terminalConfig = DAQmx_Val_RSE;
+    std::cout<<"Device Name: "<<deviceName<<std::endl;
+    std::cout<<"Mode: "<<mode<<std::endl;
+    std::cout<<"Terminal Config: "<<terminalConfig<<std::endl;
+    int status_0 = DAQmxCreateAIVoltageChan(DAQHandle, deviceName, "", terminalConfig, -5, 5, DAQmx_Val_Volts, NULL);
 //    int status_0 = DAQmxCreateAIVoltageChan(DAQHandle, "Dev1/ai0", "", DAQmx_Val_Diff, -5, 5, DAQmx_Val_Volts, NULL);
     std::string status_1_str = status_0 == 0?"True":"False";
     std::cout << "Creating Analog Input: " << status_1_str << std::endl;
@@ -65,7 +73,8 @@ int getVoltage(float64 *readArray, int32 *samplesReadPerChannel, int numberOfSam
     return status;
 }
 
-int monitorChannel(const char deviceName[], int numOfChannels) {
+int monitorChannel(const char deviceName[], int numOfChannels, int mode) {
+    std::cout<<"Sample Input mode: "<<mode<<std::endl;
     std::string totalTimeInSecondsString, stepInMiliSecondsString, numberOfSamplesString;
     std::cout<<"How many seconds data to collect:"<<std::endl;
     getline (std::cin, totalTimeInSecondsString);
@@ -79,7 +88,7 @@ int monitorChannel(const char deviceName[], int numOfChannels) {
         std::cout<<"Failed to Create DaQ Task"<<std::endl;
         return -1;
     }
-    int statusInitDaQChain = initDAQAIChan(deviceName);
+    int statusInitDaQChain = initDAQAIChan(deviceName, mode);
     if (statusInitDaQChain != 0) {
         std::cout<<"Failed to Create DaQ Task"<<std::endl;
         clearDAQTask();
@@ -122,13 +131,15 @@ int monitorChannel(const char deviceName[], int numOfChannels) {
     return 0;
 }
 
-int testChannel(const char deviceName[]) {
+int testChannel(const char deviceName[], int mode) {
+    int64 readArraySize;
+    std::cout<<"Sample Input Mode"<<mode<<std::endl;
     int status;
     status = createDAQTask();
     if (status != 0) {
         return -1;
     }
-    status = initDAQAIChan(deviceName);
+    status = initDAQAIChan(deviceName, mode);
     if (status != 0) {
         clearDAQTask();
         return -2;
@@ -170,15 +181,19 @@ int testChannel(const char deviceName[]) {
             token = std::strtok(NULL, " ");
             i += 1;
         }
+        if (mode == NORMALMODE)
+            readArraySize = numOfVoltageSamples;
+        else
+            readArraySize = numOfVoltageSamples * 2;
         float64 *readArray = NULL;
-        readArray = (float64*)calloc( numOfVoltageSamples, sizeof(float64));
+        readArray = (float64*)calloc( readArraySize, sizeof(float64));
         int32 samplesReadPerChannel = 0;
-        int status = getVoltage(readArray, &samplesReadPerChannel, numOfVoltageSamples, numOfVoltageSamples);
+        int status = getVoltage(readArray, &samplesReadPerChannel, numOfVoltageSamples, readArraySize);
         if (status == 0) {
             std::cout<<"Number of samples per channel: " << samplesReadPerChannel << std::endl;
             std::cout<<"Reading: " << reading << std::endl;
-            for (int i=0; i <  samplesReadPerChannel; i++) {
-                std::cout << "Voltage[" << 0 << "] = " << readArray[i] * 1000 << " mVolts"<< std::endl;
+            for (int i=0; i <  readArraySize; i++) {
+                std::cout << "Voltage = " << readArray[i] * 1000 << " mVolts"<< std::endl;
             }
         }
         free(readArray);

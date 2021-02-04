@@ -62,7 +62,7 @@ int writeToPort(std::string dataWord) {
     dataWord.insert(0, std::string("<"));
     dataWord.append((">\r"));
     dataWordStr = dataWord.c_str();
-//    std::cout<<"Command to Motor:"<<dataWordStr<<std::endl;
+    std::cout<<"Command to Motor:"<<dataWordStr<<std::endl;
     DWORD dwBytesToWrite = (DWORD)strlen(dataWordStr);
     DWORD dwBytesWritten = 0;
     bool bErrorFlag = WriteFile(
