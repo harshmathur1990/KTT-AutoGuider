@@ -1,0 +1,1 @@
+ .\FPVoltageController  2>&1 | % ToString | Tee-Object output.txt
