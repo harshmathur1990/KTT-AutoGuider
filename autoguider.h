@@ -9,7 +9,14 @@
 #include "daqutils.h"
 #include "motorcontrols.h"
 #include "utilheaders.h"
-extern bool runClosedLoop;
+
+extern bool pauseLoop;
+
+typedef struct {
+    float64 raSlope, raConstant, raReferenceVoltage, decSlope, decConstant, decReferenceVoltage, loopUpdateTimeInSeconds, pollingTimeInMiliSeconds;
+    int64 numberOfVoltageSamples, raFrequency, decFrequency, statusWorker, maxVoltageChangeInMiliVoltsPerSecRA, maxVoltageChangeInMiliVoltsPerSecDEC, mode
+    ;
+} worker_params;
 
 int closedLoop();
 
@@ -22,16 +29,6 @@ int calibrateDEC();
 int calibrateChannel(int motorNum, const char deviceName[], int mode);
 
 int getMeanRAAndDEC(float64 *readArray, int64 readArraySize, int32 samplesReadPerChannel, int mode, float64 *meanRA, float64 *meanDEC);
-
-typedef struct {
-    float64 raSlope, raConstant, raReferenceVoltage, decSlope, decConstant, decReferenceVoltage, loopUpdateTimeInSeconds, pollingTimeInMiliSeconds;
-    int64 numberOfVoltageSamples, raFrequency, decFrequency, statusWorker, maxVoltageChangeInMiliVoltsPerSecRA, maxVoltageChangeInMiliVoltsPerSecDEC, mode
-    ;
-} worker_params;
-
-template <typename T> int sgn(T val) {
-    return (T(0) < val) - (val < T(0));
-}
 
 int monitorRaAndDEC();
 

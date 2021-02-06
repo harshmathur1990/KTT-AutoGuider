@@ -4,12 +4,12 @@
 
 #include "autoguider.h"
 
-bool runClosedLoop;
+bool pauseLoop;
 
 DWORD WINAPI closedLoopThread(LPVOID lparam) {
     std::string input;
     worker_params &workerParams = *(worker_params*)lparam;
-    float64 *readArray=NULL, *meanRA=NULL, *meanDEC=NULL, refCountRA, refCountDEC, countRA, countDEC, timeToCompleteMovement=0, prevMeanRA=0, currMeanRA=0, prevMeanDEC=0, currMeanDEC=0;
+    float64 *readArray=NULL, *meanRA=NULL, *meanDEC=NULL, refCountRA, refCountDEC, countRA, countDEC, timeToCompleteMovement=0, prevMeanRA=0, currMeanRA=0, prevMeanDEC=0, currMeanDEC=0, quitCountRA=0, quitCountDEC=0;
     int64 decCorrrection, raCorrection, RA=0, DEC=0, direction = 1, statusSetMotorCount=0, clock, readArraySize;
     const int64 raMotorNum = 2, decMotorNum = 1;
     int32 samplesReadPerChannel=0;
@@ -30,6 +30,17 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
     else
         readArraySize = workerParams.numberOfVoltageSamples * 4;
     while (1) {
+
+        if (quitCountRA == 3 || quitCountDEC == 3) {
+            pauseLoop = true;
+            std::cout<<"Image out of Sensor, Please readjust and press c"<<std::endl;
+            while(pauseLoop == false) {
+                Sleep(1000);
+            }
+            clock = 0;
+            quitCountRA = 0;
+            quitCountDEC = 0;
+        }
         meanRA[clock] = 0;
         meanDEC[clock] = 0;
         readArray = (float64*)calloc( workerParams.numberOfVoltageSamples * 2, sizeof(float64));
@@ -64,6 +75,22 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
             std::cout << "Correction DEC:" << decCorrrection << std::endl;
             RA = abs(raCorrection);
             DEC = abs(decCorrrection);
+            if (RA > abs(workerParams.maxVoltageChangeInMiliVoltsPerSecRA)) {
+                RA = abs(workerParams.maxVoltageChangeInMiliVoltsPerSecRA);
+                quitCountRA += 1;
+            }
+            else {
+                quitCountRA = 0;
+            }
+            if (DEC > abs(workerParams.maxVoltageChangeInMiliVoltsPerSecDEC)) {
+                DEC = abs(workerParams.maxVoltageChangeInMiliVoltsPerSecDEC);
+                quitCountDEC += 1;
+            }
+            else {
+                quitCountDEC = 0;
+            }
+            if (quitCountRA == 3 || quitCountDEC == 3)
+                continue;
             direction = sgn(raCorrection) * sgn(workerParams.raReferenceVoltage);
             std::cout << "Applying counts RA:" << direction * RA << std::endl;
             statusSetMotorCount = setMotorCount(raMotorNum, direction, RA);
@@ -285,8 +312,12 @@ int closedLoop(){
         if (inputAccepted) break;
     }
     myHandle = CreateThread(0, 0, closedLoopThread, &workerParams, 0, &myThreadID);
+    pauseLoop = false;
     std::cout<<"Press q to quit close loop operation."<<std::endl;
     while(slopeString[0] != 'q' ) {
+        if (pauseLoop == true && (slopeString[0] == 'c' || slopeString[0]== 'C')) {
+            pauseLoop = false;
+        }
         getline(std::cin, slopeString);
     }
     CloseHandle(myHandle);
