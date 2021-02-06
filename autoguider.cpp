@@ -10,7 +10,7 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
     std::string input;
     worker_params &workerParams = *(worker_params*)lparam;
     float64 *readArray=NULL, *meanRA=NULL, *meanDEC=NULL, refCountRA, refCountDEC, countRA, countDEC, timeToCompleteMovement=0, prevMeanRA=0, currMeanRA=0, prevMeanDEC=0, currMeanDEC=0, quitCountRA=0, quitCountDEC=0;
-    int64 decCorrrection, raCorrection, RA=0, DEC=0, direction = 1, statusSetMotorCount=0, clock, readArraySize;
+    int64 decCorrrection, raCorrection, RA=0, DEC=0, raDirection = 1, decDirection = 1, prevRaDirection = -1, prevDecDirection = -1, statusSetMotorCount=0, clock, readArraySize;
     const int64 raMotorNum = 2, decMotorNum = 1;
     int32 samplesReadPerChannel=0;
     refCountRA = (workerParams.raReferenceVoltage - workerParams.raConstant) / workerParams.raSlope;
@@ -34,12 +34,14 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
         if (quitCountRA == 3 || quitCountDEC == 3) {
             pauseLoop = true;
             std::cout<<"Image out of Sensor, Please readjust and press c"<<std::endl;
-            while(pauseLoop == false) {
+            while(pauseLoop == true) {
                 Sleep(1000);
             }
             clock = 0;
             quitCountRA = 0;
             quitCountDEC = 0;
+            prevRaDirection = -1;
+            prevDecDirection = -1;
         }
         meanRA[clock] = 0;
         meanDEC[clock] = 0;
@@ -75,35 +77,40 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
             std::cout << "Correction DEC:" << decCorrrection << std::endl;
             RA = abs(raCorrection);
             DEC = abs(decCorrrection);
+            raDirection = sgn(raCorrection) * sgn(workerParams.raReferenceVoltage);
+            decDirection = sgn(decCorrrection) * sgn(workerParams.decReferenceVoltage) * -1;
             if (RA > abs(workerParams.maxVoltageChangeInMiliVoltsPerSecRA)) {
                 RA = abs(workerParams.maxVoltageChangeInMiliVoltsPerSecRA);
-                quitCountRA += 1;
+                if(prevRaDirection == raDirection)
+                    quitCountRA += 1;
             }
             else {
                 quitCountRA = 0;
             }
             if (DEC > abs(workerParams.maxVoltageChangeInMiliVoltsPerSecDEC)) {
                 DEC = abs(workerParams.maxVoltageChangeInMiliVoltsPerSecDEC);
-                quitCountDEC += 1;
+                if (prevDecDirection == decDirection)
+                    quitCountDEC += 1;
             }
             else {
                 quitCountDEC = 0;
             }
+            prevRaDirection = raDirection;
+            prevDecDirection = decDirection;
             if (quitCountRA == 3 || quitCountDEC == 3)
                 continue;
-            direction = sgn(raCorrection) * sgn(workerParams.raReferenceVoltage);
-            std::cout << "Applying counts RA:" << direction * RA << std::endl;
-            statusSetMotorCount = setMotorCount(raMotorNum, direction, RA);
-//        timeToCompleteMovement = RA / workerParams.raFrequency;
+
+            std::cout << "Applying counts RA:" << raDirection * RA << std::endl;
+            statusSetMotorCount = setMotorCount(raMotorNum, raDirection, RA);
             if (statusSetMotorCount != 0) {
                 free(readArray);
                 workerParams.statusWorker = -2;
                 return -2;
             }
-            direction = sgn(decCorrrection) * sgn(workerParams.decReferenceVoltage) * -1;
-            std::cout << "Applying counts DEC:" << direction * DEC << std::endl;
-            statusSetMotorCount = setMotorCount(decMotorNum, direction, DEC);
-//        timeToCompleteMovement = RA / workerParams.raFrequency;
+
+            std::cout << "Applying counts DEC:" << decDirection * DEC << std::endl;
+            statusSetMotorCount = setMotorCount(decMotorNum, decDirection, DEC);
+
             if (statusSetMotorCount != 0) {
                 free(readArray);
                 workerParams.statusWorker = -2;
@@ -311,8 +318,8 @@ int closedLoop(){
         free(readArray);
         if (inputAccepted) break;
     }
-    myHandle = CreateThread(0, 0, closedLoopThread, &workerParams, 0, &myThreadID);
     pauseLoop = false;
+    myHandle = CreateThread(0, 0, closedLoopThread, &workerParams, 0, &myThreadID);
     std::cout<<"Press q to quit close loop operation."<<std::endl;
     while(slopeString[0] != 'q' ) {
         if (pauseLoop == true && (slopeString[0] == 'c' || slopeString[0]== 'C')) {
