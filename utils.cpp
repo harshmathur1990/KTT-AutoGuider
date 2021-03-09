@@ -7,15 +7,15 @@
 int getModeAndDeviceName(std::string deviceOptions[], std::string *deviceName, int *mode) {
     std::string modeString;
     while (1) {
-        std::cout << "Enter 0 for Normal Mode, 1 for cloud mode" << std::endl;
+        std::cout << "Enter 0 for Individual Mode, 1 for coupled mode" << std::endl;
         getline(std::cin, modeString);
         *mode = atoi(modeString.c_str());
-        if (*mode == NORMALMODE || *mode == CLOUDMODE) {
+        if (*mode == INDIVIDUAL || *mode == COUPLED) {
             switch (*mode) {
-                case NORMALMODE:
+                case INDIVIDUAL:
                     *deviceName = deviceOptions[0];
                     break;
-                case CLOUDMODE:
+                case COUPLED:
                     *deviceName = deviceOptions[1];
                     break;
             }

@@ -6,11 +6,63 @@
 
 bool pauseLoop;
 
+int getCorrection(worker_params workerParams, float64 currMeanRA, float64 currMeanDEC, float64 refCountRA, float64 refCountDEC, float64 *prevErrorVoltageRA, float64 *integralErrorVoltageRA, float64 *curErrorVoltageRA, float64 *deltaErrorVoltageRA, float64 *prevErrorVoltageDEC, float64 *integralErrorVoltageDEC, float64 *curErrorVoltageDEC, float64 *deltaErrorVoltageDEC, int64 *raCorrection, int64 *decCorrection) {
+    float64 countRA, countDEC;
+    if (workerParams.mode == INDIVIDUAL) {
+        countRA = (currMeanRA - workerParams.raConstant) / workerParams.raSlope;
+        std::cout << "Count RA: " << countRA << std::endl;
+        *raCorrection = countRA - refCountRA;
+        std::cout << "Correction RA:" << raCorrection << std::endl;
+        countDEC = (currMeanDEC - workerParams.decConstant) / workerParams.decSlope;
+        std::cout << "Count DEC: " << countDEC << std::endl;
+        *decCorrection = countDEC - refCountDEC;
+        std::cout << "Correction DEC:" << decCorrection << std::endl;
+    }
+    else {
+        *raCorrection = 0;
+        *decCorrection = 0;
+        if (workerParams.kp != 0) {
+            countRA = workerParams.raSlope * (currMeanRA - workerParams.raReferenceVoltage) + workerParams.raConstant * (currMeanDEC - workerParams.decReferenceVoltage);
+            countDEC = workerParams.decSlope * (currMeanRA - workerParams.raReferenceVoltage) + workerParams.decConstant * (currMeanDEC - workerParams.decReferenceVoltage);
+            *raCorrection += workerParams.kp * countRA;
+            *decCorrection += workerParams.kp * countDEC;
+            std::cout << "P Correction RA:" << countRA << std::endl;
+            std::cout << "P Correction DEC:" << countDEC << std::endl;
+        }
+        if (workerParams.ki != 0) {
+            *integralErrorVoltageRA += workerParams.raReferenceVoltage - currMeanRA;
+            *integralErrorVoltageDEC += workerParams.decReferenceVoltage - currMeanDEC;
+            countRA = workerParams.raSlope * *integralErrorVoltageRA + workerParams.raConstant * *integralErrorVoltageDEC;
+            countDEC = workerParams.decSlope * *integralErrorVoltageRA + workerParams.decConstant * *integralErrorVoltageDEC;
+            *raCorrection += workerParams.ki * countRA;
+            *decCorrection += workerParams.ki * countDEC;
+            std::cout << "I Correction RA:" << countRA << std::endl;
+            std::cout << "I Correction DEC:" << countDEC << std::endl;
+        }
+        if (workerParams.kd != 0) {
+            *curErrorVoltageRA = workerParams.raReferenceVoltage - currMeanRA;
+            *curErrorVoltageDEC = workerParams.decReferenceVoltage - currMeanDEC;
+            *deltaErrorVoltageRA = *curErrorVoltageRA - *prevErrorVoltageRA;
+            *deltaErrorVoltageDEC = *curErrorVoltageDEC - *prevErrorVoltageDEC;
+            countRA = workerParams.raSlope * *deltaErrorVoltageRA + workerParams.raConstant * *deltaErrorVoltageDEC;
+            countDEC = workerParams.decSlope * *deltaErrorVoltageRA + workerParams.decConstant * *deltaErrorVoltageDEC;
+            *raCorrection += workerParams.kd * countRA;
+            *decCorrection += workerParams.kd * countDEC;
+            *prevErrorVoltageRA = *curErrorVoltageRA;
+            *prevErrorVoltageDEC = *curErrorVoltageDEC;
+            std::cout << "D Correction RA:" << countRA << std::endl;
+            std::cout << "D Correction DEC:" << countDEC << std::endl;
+        }
+    }
+    return 0;
+}
+
+
 DWORD WINAPI closedLoopThread(LPVOID lparam) {
     std::string input;
     worker_params &workerParams = *(worker_params*)lparam;
-    float64 *readArray=NULL, *meanRA=NULL, *meanDEC=NULL, refCountRA, refCountDEC, countRA, countDEC, timeToCompleteMovement=0, prevMeanRA=0, currMeanRA=0, prevMeanDEC=0, currMeanDEC=0, quitCountRA=0, quitCountDEC=0;
-    int64 decCorrrection, raCorrection, RA=0, DEC=0, raDirection = 1, decDirection = 1, prevRaDirection = -1, prevDecDirection = -1, statusSetMotorCount=0, clock, readArraySize;
+    float64 *readArray=NULL, *meanRA=NULL, *meanDEC=NULL, refCountRA, refCountDEC, countRA, countDEC, timeToCompleteMovement=0, prevMeanRA=0, currMeanRA=0, prevMeanDEC=0, currMeanDEC=0, quitCountRA=0, quitCountDEC=0, prevErrorVoltageRA=0, integralErrorVoltageRA=0, curErrorVoltageRA=0, deltaErrorVoltageRA=0, prevErrorVoltageDEC=0, integralErrorVoltageDEC=0, curErrorVoltageDEC=0, deltaErrorVoltageDEC=0;
+    int64 decCorrection, raCorrection, RA=0, DEC=0, raDirection = 1, decDirection = 1, prevRaDirection = -1, prevDecDirection = -1, statusSetMotorCount=0, clock, readArraySize;
     const int64 raMotorNum = 2, decMotorNum = 1;
     int32 samplesReadPerChannel=0;
     refCountRA = (workerParams.raReferenceVoltage - workerParams.raConstant) / workerParams.raSlope;
@@ -25,17 +77,13 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
     meanRA = (float64*) calloc(counter, sizeof(float64));
     meanDEC = (float64*) calloc(counter, sizeof(float64));
     clock = 0;
-    if (workerParams.mode == NORMALMODE)
-        readArraySize = workerParams.numberOfVoltageSamples * 2;
-    else
-        readArraySize = workerParams.numberOfVoltageSamples * 4;
+    readArraySize = workerParams.numberOfVoltageSamples * 2;
     while (1) {
-
         if (quitCountRA == 3 || quitCountDEC == 3) {
             pauseLoop = true;
             std::cout<<"Image out of Sensor, Please readjust and press c"<<std::endl;
             while(pauseLoop == true) {
-                Sleep(1000);
+//                Sleep(1000);
             }
             clock = 0;
             quitCountRA = 0;
@@ -45,15 +93,15 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
         }
         meanRA[clock] = 0;
         meanDEC[clock] = 0;
-        readArray = (float64*)calloc( workerParams.numberOfVoltageSamples * 2, sizeof(float64));
-        int statusReadVoltage = getVoltage(readArray, &samplesReadPerChannel, workerParams.numberOfVoltageSamples, workerParams.numberOfVoltageSamples * 2);
+        readArray = (float64*)calloc( readArraySize, sizeof(float64));
+        int statusReadVoltage = getVoltage(readArray, &samplesReadPerChannel, workerParams.numberOfVoltageSamples, readArraySize);
         if (statusReadVoltage != 0) {
             std::cout<<"Failed to get Voltage"<<std::endl;
             free(readArray);
             workerParams.statusWorker = -1;
             return -1;
         }
-        getMeanRAAndDEC(readArray, readArraySize, samplesReadPerChannel, workerParams.mode, &meanRA[clock], &meanDEC[clock]);
+        getMeanRAAndDEC(readArray, readArraySize, samplesReadPerChannel, &meanRA[clock], &meanDEC[clock]);
         if (clock == counter) {
             prevMeanRA = currMeanRA;
             prevMeanDEC = currMeanDEC;
@@ -67,18 +115,11 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
             currMeanDEC /= counter;
             std::cout << "Mean Voltage RA: " << currMeanRA << std::endl;
             std::cout << "Mean Voltage DEC: " << currMeanDEC << std::endl;
-            countRA = (currMeanRA - workerParams.raConstant) / workerParams.raSlope;
-            std::cout << "Count RA: " << countRA << std::endl;
-            raCorrection = countRA - refCountRA;
-            std::cout << "Correction RA:" << raCorrection << std::endl;
-            countDEC = (currMeanDEC - workerParams.decConstant) / workerParams.decSlope;
-            std::cout << "Count DEC: " << countDEC << std::endl;
-            decCorrrection = countDEC - refCountDEC;
-            std::cout << "Correction DEC:" << decCorrrection << std::endl;
+            getCorrection(workerParams, currMeanRA, currMeanDEC, refCountRA, refCountDEC, &prevErrorVoltageRA, &integralErrorVoltageRA, &curErrorVoltageRA, &deltaErrorVoltageRA, &prevErrorVoltageDEC, &integralErrorVoltageDEC, &curErrorVoltageDEC, &deltaErrorVoltageDEC, &raCorrection, &decCorrection);
             RA = abs(raCorrection);
-            DEC = abs(decCorrrection);
+            DEC = abs(decCorrection);
             raDirection = sgn(raCorrection) * sgn(workerParams.raReferenceVoltage);
-            decDirection = sgn(decCorrrection) * sgn(workerParams.decReferenceVoltage) * -1;
+            decDirection = sgn(decCorrection) * sgn(workerParams.decReferenceVoltage) * -1;
             if (RA > abs(workerParams.maxVoltageChangeInMiliVoltsPerSecRA)) {
                 RA = abs(workerParams.maxVoltageChangeInMiliVoltsPerSecRA);
                 if(prevRaDirection == raDirection)
@@ -124,28 +165,16 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
     }
 }
 
-int getMeanRAAndDEC(float64 *readArray, int64 readArraySize,int32 samplesReadPerChannel, int mode, float64 *meanRA, float64 *meanDEC) {
-    float64 decSeg1=0, decSeg2=0, raSeg1=0, raSeg2=0;
+int getMeanRAAndDEC(float64 *readArray, int64 readArraySize, int32 samplesReadPerChannel, float64 *meanRA,
+                    float64 *meanDEC) {
     *meanRA = 0;
     *meanDEC = 0;
-    if (mode == NORMALMODE) {
-        for (int i=0; i <  samplesReadPerChannel * 2; i+=2) {
-            *meanRA += readArray[i+1] * 1000;
-            *meanDEC += readArray[i] * 1000;
-        }
-        *meanRA /= samplesReadPerChannel;
-        *meanDEC /= samplesReadPerChannel;
+    for (int i=0; i <  samplesReadPerChannel * 2; i+=2) {
+        *meanRA += readArray[i+1] * 1000;
+        *meanDEC += readArray[i] * 1000;
     }
-    else {
-        for (int i=0; i <  samplesReadPerChannel * 4; i+=4) {
-            decSeg1 += readArray[i] * 1000;
-            decSeg2 += readArray[i+1] * 1000;
-            raSeg1 += readArray[i+2] * 1000;
-            raSeg2 += readArray[i+3] * 1000;
-        }
-        *meanRA = (raSeg1 - raSeg2) / (raSeg1 + raSeg2);
-        *meanDEC = (decSeg1 - decSeg2) / (decSeg1 + decSeg2);
-    }
+    *meanRA /= samplesReadPerChannel;
+    *meanDEC /= samplesReadPerChannel;
     return 0;
 }
 
@@ -153,7 +182,7 @@ int closedLoop(){
     std::string input, slopeString, constantString, referenceVoltageString, numberOfVoltageSamplesString, frequencyString, loopUpdateTimeInSecondsString, pollingTimeInMiliSecondsString, maxVoltageChangeInMiliVoltsPerSecString;
     float64 raSlope, decSlope, raConstant, decConstant, raReferenceVoltage, decReferenceVoltage, maxVoltageChangeInMiliVoltsPerSecRA, maxVoltageChangeInMiliVoltsPerSecDEC, loopUpdateTimeInSeconds, pollingTimeInMiliSeconds;
     int64 numberOfVoltageSamples, raFrequency, decFrequency, comPortNum, raMotorNum=2, decMotorNum = 1;
-    std::string deviceNameOptions[] = {"Dev1/ai1:2", "Dev1/ai1, Dev1/ai9, Dev1/ai2, Dev1/ai10"};
+    std::string deviceNameOptions[] = {"Dev1/ai1:2", "Dev1/ai1:2"};
     std::string deviceName;
     int mode;
     getModeAndDeviceName(deviceNameOptions, &deviceName, &mode);
@@ -228,7 +257,7 @@ int closedLoop(){
         closeControllerConnection();
         return -4;
     }
-    int statusInitDaQChain = initDAQAIChan(deviceName.c_str(), mode);
+    int statusInitDaQChain = initDAQAIChan(deviceName.c_str());
     if (statusInitDaQChain != 0) {
         std::cout<<"Failed to Create DaQ Task"<<std::endl;
         disableMotor(raMotorNum);
@@ -280,14 +309,38 @@ int closedLoop(){
     workerParams.maxVoltageChangeInMiliVoltsPerSecDEC = maxVoltageChangeInMiliVoltsPerSecDEC;
     workerParams.mode = mode;
     workerParams.statusWorker = 0;
+    if (mode == INDIVIDUAL) {
+        workerParams.kp = 1;
+        workerParams.ki = 0;
+        workerParams.kd = 0;
+    }
+    else {
+        std::cout<<"Enter 1 to give your own kp, ki, kd."<<std::endl;
+        getline(std::cin, input);
+        int choice = atoi(input.c_str());
+        if (choice == 1) {
+            std::cout<<"Enter the value of Kp:"<<std::endl;
+            getline(std::cin, input);
+            workerParams.kp = atof(input.c_str());
+            std::cout<<"Enter the value of Ki:"<<std::endl;
+            getline(std::cin, input);
+            workerParams.ki = atof(input.c_str());
+            std::cout<<"Enter the value of Kd:"<<std::endl;
+            getline(std::cin, input);
+            workerParams.kd = atof(input.c_str());
+        }
+        else{
+            workerParams.kp = 0.6;
+            workerParams.ki = 1.2 / 4;
+            workerParams.kd = 3.0 * 4.0 / 40;
+        }
+    }
+    std::cout<<"Kp: "<<workerParams.kp<<" Ki: "<<workerParams.ki<<" Kd: "<<workerParams.kd<<std::endl;
     bool inputAccepted;
     float64 meanRA, meanDEC, *readArray=NULL;
     int32 samplesReadPerChannel=0;
     int64 readArraySize;
-    if (mode == NORMALMODE)
-        readArraySize = numberOfVoltageSamples * 2;
-    else
-        readArraySize = numberOfVoltageSamples * 4;
+    readArraySize = numberOfVoltageSamples * 2;
     while(1) {
         inputAccepted=false;
         meanRA = 0;
@@ -300,7 +353,7 @@ int closedLoop(){
             workerParams.statusWorker = -1;
             return -1;
         }
-        getMeanRAAndDEC(readArray, readArraySize, samplesReadPerChannel, mode, &meanRA, &meanDEC);
+        getMeanRAAndDEC(readArray, readArraySize, samplesReadPerChannel, &meanRA, &meanDEC);
         std::cout << "Mean RA: " << meanRA << std::endl;
         std::cout << "Mean DEC: " << meanDEC << std::endl;
         while (1) {
@@ -389,7 +442,7 @@ int calibrateChannel(int motorNum, const char deviceName[], int mode) {
         closeControllerConnection();
         return -4;
     }
-    int statusInitDaQChain = initDAQAIChan(deviceName, mode);
+    int statusInitDaQChain = initDAQAIChan(deviceName);
     if (statusInitDaQChain != 0) {
         std::cout<<"Failed to Create DaQ Task"<<std::endl;
         disableMotor(motorNum);
@@ -414,7 +467,7 @@ int calibrateChannel(int motorNum, const char deviceName[], int mode) {
     float loopUpdateTime = 100;
     int totalSteps = 0;
     int statusSetMotorCount = 0;
-    if (mode == NORMALMODE)
+    if (mode == INDIVIDUAL)
         readArraySize = numOfVoltageSamples;
     else
         readArraySize = numOfVoltageSamples * 2;
@@ -433,7 +486,6 @@ int calibrateChannel(int motorNum, const char deviceName[], int mode) {
         }
         std::cout<<totalSteps;
         for (int i=0; i <  readArraySize; i++) {
-
             std::cout << "  " << readArray[i] * 1000;
         }
         std::cout<<std::endl;
@@ -476,7 +528,7 @@ int calibrateChannel(int motorNum, const char deviceName[], int mode) {
 int calibrateRA() {
     int motorNum = 2;
     std::string deviceName;
-    std::string deviceNameOptions[] = {"Dev1/ai2", "Dev1/ai2, Dev1/ai10"};
+    std::string deviceNameOptions[] = {"Dev1/ai2", "Dev1/ai2:1"};
     std::string modeString;
     int mode;
     getModeAndDeviceName(deviceNameOptions, &deviceName, &mode);
@@ -486,7 +538,7 @@ int calibrateRA() {
 int calibrateDEC() {
     int motorNum = 1;
     std::string deviceName;
-    std::string deviceNameOptions[] = {"Dev1/ai1", "Dev1/ai1, Dev1/ai9"};
+    std::string deviceNameOptions[] = {"Dev1/ai1", "Dev1/ai1:2"};
     std::string modeString;
     int mode;
     getModeAndDeviceName(deviceNameOptions, &deviceName, &mode);
@@ -494,14 +546,7 @@ int calibrateDEC() {
 }
 
 int monitorRaAndDEC() {
-    std::string deviceName;
-    int numOfChannels;
-    std::string deviceNameOptions[] = { "Dev1/ai1:2", "Dev1/ai1, Dev1/ai9, Dev1/ai2, Dev1/ai10"};
-    int mode;
-    getModeAndDeviceName(deviceNameOptions, &deviceName, &mode);
-    if (mode == NORMALMODE)
-        numOfChannels = 2;
-    else
-        numOfChannels = 4;
-    return monitorChannel(deviceName.c_str(), numOfChannels, mode);
+    std::string deviceName = "Dev1/ai1:2";
+    int numOfChannels = 2;
+    return monitorChannel(deviceName.c_str(), numOfChannels);
 }

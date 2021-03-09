@@ -7,8 +7,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#define NORMALMODE 0
-#define CLOUDMODE 1
+#define INDIVIDUAL 0
+#define COUPLED 1
 
 template <typename T> int sgn(T val) {
     return (T(0) < val) - (val < T(0));
