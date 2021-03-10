@@ -5,10 +5,12 @@
 #include "ra.h"
 #include "dec.h"
 #include "autoguider.h"
+#include "utilheaders.h"
 
 //double VoltageData[1];
 
 int main() {
+    setupLogging();
     std::string input;
     int mode;
     while (1) {

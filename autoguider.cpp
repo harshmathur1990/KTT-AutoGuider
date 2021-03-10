@@ -10,13 +10,18 @@ int getCorrection(worker_params workerParams, float64 currMeanRA, float64 currMe
     float64 countRA, countDEC, correctionVoltageRA, correctionVoltageDEC;
     if (workerParams.mode == INDIVIDUAL) {
         countRA = (currMeanRA - workerParams.raConstant) / workerParams.raSlope;
-        std::cout << "Count RA: " << countRA << std::endl;
+        std::sprintf(logString, "Count RA: %.2f", countRA);
+        log(logString, DEBUG);
         *raCorrection = countRA - refCountRA;
-        std::cout << "Correction RA:" << *raCorrection << std::endl;
+        std::sprintf(logString, "Correction RA: %d", *raCorrection);
+        log(logString, DEBUG);
         countDEC = (currMeanDEC - workerParams.decConstant) / workerParams.decSlope;
         std::cout << "Count DEC: " << countDEC << std::endl;
+        std::sprintf(logString, "Count DEC: %.2f", countDEC);
+        log(logString, DEBUG);
         *decCorrection = countDEC - refCountDEC;
-        std::cout << "Correction DEC:" << *decCorrection << std::endl;
+        std::sprintf(logString, "Correction DEC: %d", *decCorrection);
+        log(logString, DEBUG);
     }
     else {
         *curErrorVoltageRA = workerParams.raReferenceVoltage - currMeanRA;
