@@ -7,52 +7,37 @@
 bool pauseLoop;
 
 int getCorrection(worker_params workerParams, float64 currMeanRA, float64 currMeanDEC, float64 refCountRA, float64 refCountDEC, float64 *prevErrorVoltageRA, float64 *integralErrorVoltageRA, float64 *curErrorVoltageRA, float64 *deltaErrorVoltageRA, float64 *prevErrorVoltageDEC, float64 *integralErrorVoltageDEC, float64 *curErrorVoltageDEC, float64 *deltaErrorVoltageDEC, int64 *raCorrection, int64 *decCorrection) {
-    float64 countRA, countDEC;
+    float64 countRA, countDEC, correctionVoltageRA, correctionVoltageDEC;
     if (workerParams.mode == INDIVIDUAL) {
         countRA = (currMeanRA - workerParams.raConstant) / workerParams.raSlope;
         std::cout << "Count RA: " << countRA << std::endl;
         *raCorrection = countRA - refCountRA;
-        std::cout << "Correction RA:" << raCorrection << std::endl;
+        std::cout << "Correction RA:" << *raCorrection << std::endl;
         countDEC = (currMeanDEC - workerParams.decConstant) / workerParams.decSlope;
         std::cout << "Count DEC: " << countDEC << std::endl;
         *decCorrection = countDEC - refCountDEC;
-        std::cout << "Correction DEC:" << decCorrection << std::endl;
+        std::cout << "Correction DEC:" << *decCorrection << std::endl;
     }
     else {
-        *raCorrection = 0;
-        *decCorrection = 0;
-        if (workerParams.kp != 0) {
-            countRA = workerParams.raSlope * (currMeanRA - workerParams.raReferenceVoltage) + workerParams.raConstant * (currMeanDEC - workerParams.decReferenceVoltage);
-            countDEC = workerParams.decSlope * (currMeanRA - workerParams.raReferenceVoltage) + workerParams.decConstant * (currMeanDEC - workerParams.decReferenceVoltage);
-            *raCorrection += workerParams.kp * countRA;
-            *decCorrection += workerParams.kp * countDEC;
-            std::cout << "P Correction RA:" << countRA << std::endl;
-            std::cout << "P Correction DEC:" << countDEC << std::endl;
-        }
-        if (workerParams.ki != 0) {
-            *integralErrorVoltageRA += workerParams.raReferenceVoltage - currMeanRA;
-            *integralErrorVoltageDEC += workerParams.decReferenceVoltage - currMeanDEC;
-            countRA = workerParams.raSlope * *integralErrorVoltageRA + workerParams.raConstant * *integralErrorVoltageDEC;
-            countDEC = workerParams.decSlope * *integralErrorVoltageRA + workerParams.decConstant * *integralErrorVoltageDEC;
-            *raCorrection += workerParams.ki * countRA;
-            *decCorrection += workerParams.ki * countDEC;
-            std::cout << "I Correction RA:" << countRA << std::endl;
-            std::cout << "I Correction DEC:" << countDEC << std::endl;
-        }
-        if (workerParams.kd != 0) {
-            *curErrorVoltageRA = workerParams.raReferenceVoltage - currMeanRA;
-            *curErrorVoltageDEC = workerParams.decReferenceVoltage - currMeanDEC;
-            *deltaErrorVoltageRA = *curErrorVoltageRA - *prevErrorVoltageRA;
-            *deltaErrorVoltageDEC = *curErrorVoltageDEC - *prevErrorVoltageDEC;
-            countRA = workerParams.raSlope * *deltaErrorVoltageRA + workerParams.raConstant * *deltaErrorVoltageDEC;
-            countDEC = workerParams.decSlope * *deltaErrorVoltageRA + workerParams.decConstant * *deltaErrorVoltageDEC;
-            *raCorrection += workerParams.kd * countRA;
-            *decCorrection += workerParams.kd * countDEC;
-            *prevErrorVoltageRA = *curErrorVoltageRA;
-            *prevErrorVoltageDEC = *curErrorVoltageDEC;
-            std::cout << "D Correction RA:" << countRA << std::endl;
-            std::cout << "D Correction DEC:" << countDEC << std::endl;
-        }
+        *curErrorVoltageRA = workerParams.raReferenceVoltage - currMeanRA;
+        *curErrorVoltageDEC = workerParams.decReferenceVoltage - currMeanDEC;
+        *integralErrorVoltageRA += *curErrorVoltageRA;
+        *integralErrorVoltageDEC += *curErrorVoltageDEC;
+        *deltaErrorVoltageRA = *curErrorVoltageRA - *prevErrorVoltageRA;
+        *deltaErrorVoltageDEC = *curErrorVoltageDEC - *prevErrorVoltageDEC;
+        std::cout<<"curErrorVoltageRA: "<<*curErrorVoltageRA<<std::endl;
+        std::cout<<"curErrorVoltageDEC: "<<*curErrorVoltageDEC<<std::endl;
+        std::cout<<"integralErrorVoltageRA: "<<*integralErrorVoltageRA<<std::endl;
+        std::cout<<"integralErrorVoltageDEC: "<<*integralErrorVoltageDEC<<std::endl;
+        std::cout<<"deltaErrorVoltageRA: "<<*deltaErrorVoltageRA<<std::endl;
+        std::cout<<"deltaErrorVoltageDEC: "<<*deltaErrorVoltageDEC<<std::endl;
+        correctionVoltageRA = workerParams.kp * *curErrorVoltageRA + workerParams.ki * *integralErrorVoltageRA + workerParams.kd * *deltaErrorVoltageRA;
+        correctionVoltageDEC = workerParams.kp * *curErrorVoltageDEC + workerParams.ki * *integralErrorVoltageDEC + workerParams.kd * *deltaErrorVoltageDEC;
+        *raCorrection = correctionVoltageRA * workerParams.raSlope + correctionVoltageDEC * workerParams.raConstant;
+        *decCorrection = correctionVoltageRA * workerParams.decSlope + correctionVoltageDEC * workerParams.decConstant;
+        std::cout<<"correctionVoltageRA: "<<correctionVoltageRA<<" correctionVoltageDEC: "<<correctionVoltageDEC<<std::endl;
+        std::cout << "Correction RA:" << *raCorrection << std::endl;
+        std::cout << "Correction DEC:" << *decCorrection << std::endl;
     }
     return 0;
 }
@@ -70,9 +55,9 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
     std::cout<<"Loop Update time (seconds):"<<workerParams.loopUpdateTimeInSeconds<<std::endl;
     std::cout<<"Polling time (miliseconds):"<<workerParams.pollingTimeInMiliSeconds<<std::endl;
     std::cout << "ReferenceVoltage RA: " << workerParams.raReferenceVoltage << std::endl;
-    std::cout << "refCount RA: " << refCountRA << std::endl;
+//    std::cout << "refCount RA: " << refCountRA << std::endl;
     std::cout << "ReferenceVoltage DEC: " << workerParams.decReferenceVoltage << std::endl;
-    std::cout << "refCount DEC: " << refCountDEC << std::endl;
+//    std::cout << "refCount DEC: " << refCountDEC << std::endl;
     const int64 counter = workerParams.loopUpdateTimeInSeconds * 1000 / workerParams.pollingTimeInMiliSeconds;
     meanRA = (float64*) calloc(counter, sizeof(float64));
     meanDEC = (float64*) calloc(counter, sizeof(float64));
@@ -118,10 +103,17 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
             getCorrection(workerParams, currMeanRA, currMeanDEC, refCountRA, refCountDEC, &prevErrorVoltageRA, &integralErrorVoltageRA, &curErrorVoltageRA, &deltaErrorVoltageRA, &prevErrorVoltageDEC, &integralErrorVoltageDEC, &curErrorVoltageDEC, &deltaErrorVoltageDEC, &raCorrection, &decCorrection);
             RA = abs(raCorrection);
             DEC = abs(decCorrection);
-            raDirection = sgn(raCorrection) * sgn(workerParams.raReferenceVoltage);
-            decDirection = sgn(decCorrection) * sgn(workerParams.decReferenceVoltage) * -1;
+            if (workerParams.mode == INDIVIDUAL) {
+                raDirection = sgn(raCorrection) * sgn(workerParams.raReferenceVoltage);
+                decDirection = sgn(decCorrection) * sgn(workerParams.decReferenceVoltage) * -1;
+            }
+            else {
+                raDirection = sgn(raCorrection);
+                decDirection = sgn(decCorrection);
+            }
+
             if (RA > abs(workerParams.maxVoltageChangeInMiliVoltsPerSecRA)) {
-                RA = abs(workerParams.maxVoltageChangeInMiliVoltsPerSecRA);
+//                RA = abs(workerParams.maxVoltageChangeInMiliVoltsPerSecRA);
                 if(prevRaDirection == raDirection)
                     quitCountRA += 1;
             }
@@ -129,7 +121,7 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
                 quitCountRA = 0;
             }
             if (DEC > abs(workerParams.maxVoltageChangeInMiliVoltsPerSecDEC)) {
-                DEC = abs(workerParams.maxVoltageChangeInMiliVoltsPerSecDEC);
+//                DEC = abs(workerParams.maxVoltageChangeInMiliVoltsPerSecDEC);
                 if (prevDecDirection == decDirection)
                     quitCountDEC += 1;
             }
@@ -330,9 +322,9 @@ int closedLoop(){
             workerParams.kd = atof(input.c_str());
         }
         else{
-            workerParams.kp = 0.6;
-            workerParams.ki = 1.2 / 4;
-            workerParams.kd = 3.0 * 4.0 / 40;
+            workerParams.kp = 1.015;
+            workerParams.ki = 0.004;
+            workerParams.kd = 0.11;
         }
     }
     std::cout<<"Kp: "<<workerParams.kp<<" Ki: "<<workerParams.ki<<" Kd: "<<workerParams.kd<<std::endl;
