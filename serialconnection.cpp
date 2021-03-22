@@ -16,19 +16,11 @@ int createSerialConnection(int comPortNum, int baudRate, int byteSize, int stopB
     }
 
     char byteSizeBuffer[2], stopBitsBuffer[2], parityBuffer[2];
-//    char *byteSizeBuffer = static_cast<char *>(malloc(sizeof(char *)));
-//    char *stopBitsBuffer = static_cast<char *>(malloc(sizeof(char *)));
-//    char *parityBuffer = static_cast<char *>(malloc(sizeof(char *)));
     _itoa_s(byteSize, byteSizeBuffer, 10);
     _itoa_s(stopBits, stopBitsBuffer, 10);
     _itoa_s(parity, parityBuffer, 10);
-    std::cout<<"Successfully ran itoa"<<std::endl;
-    std::cout<<"byteSize: "<<(BYTE)byteSizeBuffer[0]<<std::endl;
-    std::cout<<"stopBits: "<<(BYTE)stopBitsBuffer[0]<<std::endl;
-    std::cout<<"parity: "<<(BYTE)parityBuffer[0]<<std::endl;
     DCB serialParams;
     memset(&serialParams, 0, sizeof(DCB));
-//    serialParams.DCBlength = sizeof(serialParams);
 
     bool statusGetCommState = GetCommState(serialHandle, &serialParams);
     std::cout<<"statusGetCommState: "<<statusGetCommState<<std::endl;
@@ -62,7 +54,8 @@ int writeToPort(std::string dataWord) {
     dataWord.insert(0, std::string("<"));
     dataWord.append((">\r"));
     dataWordStr = dataWord.c_str();
-    std::cout<<"Command to Motor:"<<dataWordStr<<std::endl;
+    std::sprintf(logString, "Command to Motor:  %s", dataWordStr);
+    log(logString, DEBUG);
     DWORD dwBytesToWrite = (DWORD)strlen(dataWordStr);
     DWORD dwBytesWritten = 0;
     bool bErrorFlag = WriteFile(
@@ -88,7 +81,8 @@ int testSerialConnection() {
     std::string input;
     std::string testString;
     while (1) {
-        std::cout<<"Enter e for exit, m for mode switch or a COM port :"<<std::endl;
+        std::sprintf(logString, "Enter e for exit, m for mode switch or a COM port :");
+        log(logString, PROMPT);
         getline(std::cin, input);
         if (input[0] == 'm' || input[0] == 'M') {
             break;
@@ -104,16 +98,19 @@ int testSerialConnection() {
                 1,
                 0
         );
-        std::cout<<"Status of COM Port opening:"<<status<<std::endl;
+        std::sprintf(logString, "Status of COM Port opening: %d", status);
+        log(logString, ERROR);
         if (status == 0) {
-            std::cout<<"Enter test String:"<<std::endl;
+            std::sprintf(logString, "Enter test String:");
+            log(logString, PROMPT);
             getline(std::cin, testString);
             writeToPort(testString);
             DWORD dwBytesToRead = (DWORD)strlen(testString.c_str());
             DWORD dwBytesRead;
             char* output = NULL;
             readFromPort(output, dwBytesToRead, &dwBytesRead);
-            std::cout<<"string Read:"<<output<<std::endl;
+            std::sprintf(logString, "String Read: %s", output);
+            log(logString, INFO);
         }
         closeSerialConnection();
     }

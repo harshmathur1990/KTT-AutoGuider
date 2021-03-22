@@ -12,12 +12,14 @@
 #define INDIVIDUAL 0
 #define COUPLED 1
 #define DEBUG 1
-#define ERROR 0
+#define ERROR 2
+#define INFO 0
+#define PROMPT -1
 
 extern int loggingMode;
 extern std::string loggingFilename;
 extern std::ofstream outfile;
-extern char logString[1000];
+extern char logString[100000];
 
 template <typename T> int sgn(T val) {
     return (T(0) < val) - (val < T(0));

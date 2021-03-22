@@ -30,19 +30,28 @@ int getCorrection(worker_params workerParams, float64 currMeanRA, float64 currMe
         *integralErrorVoltageDEC += *curErrorVoltageDEC;
         *deltaErrorVoltageRA = *curErrorVoltageRA - *prevErrorVoltageRA;
         *deltaErrorVoltageDEC = *curErrorVoltageDEC - *prevErrorVoltageDEC;
-        std::cout<<"curErrorVoltageRA: "<<*curErrorVoltageRA<<std::endl;
-        std::cout<<"curErrorVoltageDEC: "<<*curErrorVoltageDEC<<std::endl;
-        std::cout<<"integralErrorVoltageRA: "<<*integralErrorVoltageRA<<std::endl;
-        std::cout<<"integralErrorVoltageDEC: "<<*integralErrorVoltageDEC<<std::endl;
-        std::cout<<"deltaErrorVoltageRA: "<<*deltaErrorVoltageRA<<std::endl;
-        std::cout<<"deltaErrorVoltageDEC: "<<*deltaErrorVoltageDEC<<std::endl;
+        std::sprintf(logString, "curErrorVoltageRA:  %.2f", *curErrorVoltageRA);
+        log(logString, DEBUG);
+        std::sprintf(logString, "curErrorVoltageDEC:  %.2f", *curErrorVoltageDEC);
+        log(logString, DEBUG);
+        std::sprintf(logString, "integralErrorVoltageRA:  %.2f", *integralErrorVoltageRA);
+        log(logString, DEBUG);
+        std::sprintf(logString, "integralErrorVoltageDEC:  %.2f", *integralErrorVoltageDEC);
+        log(logString, DEBUG);
+        std::sprintf(logString, "deltaErrorVoltageRA:  %.2f", *deltaErrorVoltageRA);
+        log(logString, DEBUG);
+        std::sprintf(logString, "deltaErrorVoltageDEC:  %.2f", *deltaErrorVoltageDEC);
+        log(logString, DEBUG);
         correctionVoltageRA = workerParams.kp * *curErrorVoltageRA + workerParams.ki * *integralErrorVoltageRA + workerParams.kd * *deltaErrorVoltageRA;
         correctionVoltageDEC = workerParams.kp * *curErrorVoltageDEC + workerParams.ki * *integralErrorVoltageDEC + workerParams.kd * *deltaErrorVoltageDEC;
         *raCorrection = correctionVoltageRA * workerParams.raSlope + correctionVoltageDEC * workerParams.raConstant;
         *decCorrection = correctionVoltageRA * workerParams.decSlope + correctionVoltageDEC * workerParams.decConstant;
-        std::cout<<"correctionVoltageRA: "<<correctionVoltageRA<<" correctionVoltageDEC: "<<correctionVoltageDEC<<std::endl;
-        std::cout << "Correction RA:" << *raCorrection << std::endl;
-        std::cout << "Correction DEC:" << *decCorrection << std::endl;
+        std::sprintf(logString, "correctionVoltageRA:  %.2f correctionVoltageDEC: %.2f", correctionVoltageRA, correctionVoltageDEC);
+        log(logString, DEBUG);
+        std::sprintf(logString, "Correction RA:  %.2f", *raCorrection);
+        log(logString, DEBUG);
+        std::sprintf(logString, "Correction DEC:  %.2f", *decCorrection);
+        log(logString, DEBUG);
     }
     return 0;
 }
@@ -57,12 +66,14 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
     int32 samplesReadPerChannel=0;
     refCountRA = (workerParams.raReferenceVoltage - workerParams.raConstant) / workerParams.raSlope;
     refCountDEC = (workerParams.decReferenceVoltage - workerParams.decConstant) / workerParams.decSlope;
-    std::cout<<"Loop Update time (seconds):"<<workerParams.loopUpdateTimeInSeconds<<std::endl;
-    std::cout<<"Polling time (miliseconds):"<<workerParams.pollingTimeInMiliSeconds<<std::endl;
-    std::cout << "ReferenceVoltage RA: " << workerParams.raReferenceVoltage << std::endl;
-//    std::cout << "refCount RA: " << refCountRA << std::endl;
-    std::cout << "ReferenceVoltage DEC: " << workerParams.decReferenceVoltage << std::endl;
-//    std::cout << "refCount DEC: " << refCountDEC << std::endl;
+    std::sprintf(logString, "Loop Update time (seconds):  %.2f", workerParams.loopUpdateTimeInSeconds);
+    log(logString, INFO);
+    std::sprintf(logString, "Polling time (miliseconds):  %.2f", workerParams.pollingTimeInMiliSeconds);
+    log(logString, INFO);
+    std::sprintf(logString, "ReferenceVoltage RA:  %.2f", workerParams.raReferenceVoltage);
+    log(logString, INFO);
+    std::sprintf(logString, "ReferenceVoltage DEC:  %.2f", workerParams.decReferenceVoltage);
+    log(logString, INFO);
     const int64 counter = workerParams.loopUpdateTimeInSeconds * 1000 / workerParams.pollingTimeInMiliSeconds;
     meanRA = (float64*) calloc(counter, sizeof(float64));
     meanDEC = (float64*) calloc(counter, sizeof(float64));
@@ -71,9 +82,19 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
     while (1) {
         if (quitCountRA == 3 || quitCountDEC == 3) {
             pauseLoop = true;
-            std::cout<<"Image out of Sensor, Please readjust and press c"<<std::endl;
+            integralErrorVoltageRA = 0;
+            integralErrorVoltageDEC = 0;
+            prevErrorVoltageRA = 0;
+            prevErrorVoltageDEC = 0;
+            curErrorVoltageRA = 0;
+            curErrorVoltageDEC = 0;
+            exitMotor(1);
+            exitMotor(2);
+            disableMotor(1);
+            disableMotor(2);
+            std::sprintf(logString, "Image out of Sensor, Please readjust and press c");
+            log(logString, ERROR);
             while(pauseLoop == true) {
-//                Sleep(1000);
             }
             clock = 0;
             quitCountRA = 0;
@@ -86,7 +107,8 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
         readArray = (float64*)calloc( readArraySize, sizeof(float64));
         int statusReadVoltage = getVoltage(readArray, &samplesReadPerChannel, workerParams.numberOfVoltageSamples, readArraySize);
         if (statusReadVoltage != 0) {
-            std::cout<<"Failed to get Voltage"<<std::endl;
+            std::sprintf(logString, "Failed to get Voltage");
+            log(logString, ERROR);
             free(readArray);
             workerParams.statusWorker = -1;
             return -1;
@@ -103,8 +125,10 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
             }
             currMeanRA /= counter;
             currMeanDEC /= counter;
-            std::cout << "Mean Voltage RA: " << currMeanRA << std::endl;
-            std::cout << "Mean Voltage DEC: " << currMeanDEC << std::endl;
+            std::sprintf(logString, "Mean Voltage RA:  %.2f", currMeanRA);
+            log(logString, INFO);
+            std::sprintf(logString, "Mean Voltage DEC:  %.2f", currMeanDEC);
+            log(logString, INFO);
             getCorrection(workerParams, currMeanRA, currMeanDEC, refCountRA, refCountDEC, &prevErrorVoltageRA, &integralErrorVoltageRA, &curErrorVoltageRA, &deltaErrorVoltageRA, &prevErrorVoltageDEC, &integralErrorVoltageDEC, &curErrorVoltageDEC, &deltaErrorVoltageDEC, &raCorrection, &decCorrection);
             RA = abs(raCorrection);
             DEC = abs(decCorrection);
@@ -118,7 +142,7 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
             }
 
             if (RA > abs(workerParams.maxVoltageChangeInMiliVoltsPerSecRA)) {
-//                RA = abs(workerParams.maxVoltageChangeInMiliVoltsPerSecRA);
+                RA = abs(workerParams.maxVoltageChangeInMiliVoltsPerSecRA);
                 if(prevRaDirection == raDirection)
                     quitCountRA += 1;
             }
@@ -126,7 +150,7 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
                 quitCountRA = 0;
             }
             if (DEC > abs(workerParams.maxVoltageChangeInMiliVoltsPerSecDEC)) {
-//                DEC = abs(workerParams.maxVoltageChangeInMiliVoltsPerSecDEC);
+                DEC = abs(workerParams.maxVoltageChangeInMiliVoltsPerSecDEC);
                 if (prevDecDirection == decDirection)
                     quitCountDEC += 1;
             }
@@ -137,16 +161,18 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
             prevDecDirection = decDirection;
             if (quitCountRA == 3 || quitCountDEC == 3)
                 continue;
-
-            std::cout << "Applying counts RA:" << raDirection * RA << std::endl;
+            int64 raCounts = raDirection * RA;
+            std::sprintf(logString, "Applying counts RA:  %d", raCounts);
+            log(logString, DEBUG);
             statusSetMotorCount = setMotorCount(raMotorNum, raDirection, RA);
             if (statusSetMotorCount != 0) {
                 free(readArray);
                 workerParams.statusWorker = -2;
                 return -2;
             }
-
-            std::cout << "Applying counts DEC:" << decDirection * DEC << std::endl;
+            int64 decCounts = decDirection * RA;
+            std::sprintf(logString, "Applying counts DEC:  %d", decCounts);
+            log(logString, DEBUG);
             statusSetMotorCount = setMotorCount(decMotorNum, decDirection, DEC);
 
             if (statusSetMotorCount != 0) {
@@ -183,56 +209,65 @@ int closedLoop(){
     std::string deviceName;
     int mode;
     getModeAndDeviceName(deviceNameOptions, &deviceName, &mode);
-    std::cout<<"Sample Input Mode: "<<mode<<std::endl;
-    std::cout<<"Device Name: "<<deviceName<<std::endl;
-    std::cout<<"Enter the Slope of the RA calibration line equation:"<<std::endl;
+    std::sprintf(logString, "Sample Input Mode: %d", mode);
+    log(logString, ERROR);
+    std::sprintf(logString, "Device Name: %s", deviceName.c_str());
+    log(logString, DEBUG);
+    std::sprintf(logString, "Enter the Slope of the RA calibration line equation:");
+    log(logString, PROMPT);
     getline(std::cin, slopeString);
-    std::cout<<"Enter the Constant of the RA calibration line equation:"<<std::endl;
+    std::sprintf(logString, "Enter the Constant of the RA calibration line equation:");
+    log(logString, PROMPT);
     getline(std::cin, constantString);
-    std::cout<<"Enter the RA reference voltage:"<<std::endl;
-    getline(std::cin, referenceVoltageString);
     raSlope = atof(slopeString.c_str());
     raConstant = atof(constantString.c_str());
     raReferenceVoltage = atof(referenceVoltageString.c_str());
-    std::cout<<"Enter the Slope of the DEC calibration line equation:"<<std::endl;
+    std::sprintf(logString, "Enter the Slope of the DEC calibration line equation:");
+    log(logString, PROMPT);
     getline(std::cin, slopeString);
-    std::cout<<"Enter the Constant of the DEC calibration line equation:"<<std::endl;
+    std::sprintf(logString, "Enter the Constant of the DEC calibration line equation:");
+    log(logString, PROMPT);
     getline(std::cin, constantString);
-    std::cout<<"Enter the DEC reference voltage:"<<std::endl;
-    getline(std::cin, referenceVoltageString);
     decSlope = atof(slopeString.c_str());
     decConstant = atof(constantString.c_str());
     decReferenceVoltage = atof(referenceVoltageString.c_str());
-    std::cout<<"Enter the COM Port number: "<<std::endl;
+    std::sprintf(logString, "Enter the COM Port number: ");
+    log(logString, PROMPT);
     getline(std::cin, input);
     comPortNum = std::atoi(input.c_str());
     int status = CreateControllerConnection(comPortNum);
     if (status != 0) {
-        std::cout<<"Unable to connect to motor"<<std::endl;
+        std::sprintf(logString, "Unable to connect to motor");
+        log(logString, ERROR);
         return -1;
     }
     int statusMotorEnable = enableMotor(raMotorNum);
     if (statusMotorEnable != 0) {
-        std::cout<<"Failed to Enable RA Motor"<<std::endl;
+        std::sprintf(logString, "Failed to Enable RA Motor");
+        log(logString, ERROR);
         closeControllerConnection();
         return -2;
     }
     statusMotorEnable = enableMotor(decMotorNum);
     if (statusMotorEnable != 0) {
-        std::cout<<"Failed to Enable DEC Motor"<<std::endl;
+        std::sprintf(logString, "Failed to Enable DEC Motor");
+        log(logString, ERROR);
         disableMotor(raMotorNum);
         closeControllerConnection();
         return -2;
     }
-    std::cout<<"Enter the Frequency of RA motor:"<<std::endl;
+    std::sprintf(logString, "Enter the Frequency of RA motor:");
+    log(logString, PROMPT);
     getline(std::cin, frequencyString);
     raFrequency = atoi(frequencyString.c_str());
-    std::cout<<"Enter the Frequency of DEC motor:"<<std::endl;
+    std::sprintf(logString, "Enter the Frequency of DEC motor:");
+    log(logString, PROMPT);
     getline(std::cin, frequencyString);
     decFrequency = atoi(frequencyString.c_str());
     int statusMotorFrequency = setMotorFrequency(raMotorNum, raFrequency);
     if (statusMotorFrequency != 0) {
-        std::cout<<"Failed to Set RA Motor Frequency"<<std::endl;
+        std::sprintf(logString, "Failed to Set RA Motor Frequency");
+        log(logString, ERROR);
         disableMotor(raMotorNum);
         disableMotor(decMotorNum);
         closeControllerConnection();
@@ -240,7 +275,8 @@ int closedLoop(){
     }
     statusMotorFrequency = setMotorFrequency(decMotorNum, decFrequency);
     if (statusMotorFrequency != 0) {
-        std::cout<<"Failed to Set DEC Motor Frequency"<<std::endl;
+        std::sprintf(logString, "Failed to Set DEC Motor Frequency");
+        log(logString, ERROR);
         disableMotor(raMotorNum);
         disableMotor(decMotorNum);
         closeControllerConnection();
@@ -248,7 +284,8 @@ int closedLoop(){
     }
     int statusDaQTask = createDAQTask();
     if (statusDaQTask != 0) {
-        std::cout<<"Failed to Create DaQ Task"<<std::endl;
+        std::sprintf(logString, "Failed to Create DaQ Task");
+        log(logString, ERROR);
         disableMotor(raMotorNum);
         disableMotor(decMotorNum);
         closeControllerConnection();
@@ -256,7 +293,8 @@ int closedLoop(){
     }
     int statusInitDaQChain = initDAQAIChan(deviceName.c_str());
     if (statusInitDaQChain != 0) {
-        std::cout<<"Failed to Create DaQ Task"<<std::endl;
+        std::sprintf(logString, "Failed to init DaQ init chain");
+        log(logString, ERROR);
         disableMotor(raMotorNum);
         disableMotor(decMotorNum);
         closeControllerConnection();
@@ -265,26 +303,32 @@ int closedLoop(){
     }
     int statusStartDaQTask = startDAQTask();
     if (statusStartDaQTask != 0) {
-        std::cout<<"Failed to Start DaQ Task"<<std::endl;
+        std::sprintf(logString, "Failed to Start DaQ Task");
+        log(logString, ERROR);
         disableMotor(raMotorNum);
         disableMotor(decMotorNum);
         closeControllerConnection();
         clearDAQTask();
         return -6;
     }
-    std::cout<<"Enter the number of voltage samples:"<<std::endl;
+    std::sprintf(logString, "Enter the number of voltage samples:");
+    log(logString, PROMPT);
     getline(std::cin, numberOfVoltageSamplesString);
     numberOfVoltageSamples = atoi(numberOfVoltageSamplesString.c_str());
-    std::cout<<"Enter the loop update time in seconds:"<<std::endl;
+    std::sprintf(logString, "Enter the loop update time in seconds:");
+    log(logString, PROMPT);
     getline(std::cin, loopUpdateTimeInSecondsString);
     loopUpdateTimeInSeconds = atof(loopUpdateTimeInSecondsString.c_str());
-    std::cout<<"Enter the polling time in miliseconds:"<<std::endl;
+    std::sprintf(logString, "Enter the polling time in miliseconds:");
+    log(logString, PROMPT);
     getline(std::cin, pollingTimeInMiliSecondsString);
     pollingTimeInMiliSeconds = atof(pollingTimeInMiliSecondsString.c_str());
-    std::cout<<"Enter the max permissible voltage change per second in RA:"<<std::endl;
+    std::sprintf(logString, "Enter the max permissible counts change per second in RA:");
+    log(logString, PROMPT);
     getline(std::cin, maxVoltageChangeInMiliVoltsPerSecString);
     maxVoltageChangeInMiliVoltsPerSecRA = atoi(maxVoltageChangeInMiliVoltsPerSecString.c_str());
-    std::cout<<"Enter the max permissible voltage change per second in DEC:"<<std::endl;
+    std::sprintf(logString, "Enter the max permissible counts change per second in DEC:");
+    log(logString, PROMPT);
     getline(std::cin, maxVoltageChangeInMiliVoltsPerSecString);
     maxVoltageChangeInMiliVoltsPerSecDEC = atoi(maxVoltageChangeInMiliVoltsPerSecString.c_str());
     DWORD myThreadID;
@@ -312,17 +356,21 @@ int closedLoop(){
         workerParams.kd = 0;
     }
     else {
-        std::cout<<"Enter 1 to give your own kp, ki, kd."<<std::endl;
+        std::sprintf(logString, "Enter 1 to give your own kp, ki, kd.");
+        log(logString, PROMPT);
         getline(std::cin, input);
         int choice = atoi(input.c_str());
         if (choice == 1) {
-            std::cout<<"Enter the value of Kp:"<<std::endl;
+            std::sprintf(logString, "Enter the value of Kp:");
+            log(logString, PROMPT);
             getline(std::cin, input);
             workerParams.kp = atof(input.c_str());
-            std::cout<<"Enter the value of Ki:"<<std::endl;
+            std::sprintf(logString, "Enter the value of Ki:");
+            log(logString, PROMPT);
             getline(std::cin, input);
             workerParams.ki = atof(input.c_str());
-            std::cout<<"Enter the value of Kd:"<<std::endl;
+            std::sprintf(logString, "Enter the value of Kd:");
+            log(logString, PROMPT);
             getline(std::cin, input);
             workerParams.kd = atof(input.c_str());
         }
@@ -332,7 +380,8 @@ int closedLoop(){
             workerParams.kd = 0.11;
         }
     }
-    std::cout<<"Kp: "<<workerParams.kp<<" Ki: "<<workerParams.ki<<" Kd: "<<workerParams.kd<<std::endl;
+    std::sprintf(logString, "Kp: %.2f Ki: %.2f Kd: %.2f", workerParams.kp, workerParams.ki, workerParams.kd);
+    log(logString, INFO);
     bool inputAccepted;
     float64 meanRA, meanDEC, *readArray=NULL;
     int32 samplesReadPerChannel=0;
@@ -345,19 +394,25 @@ int closedLoop(){
         readArray = (float64*)calloc( readArraySize, sizeof(float64));
         int statusReadVoltage = getVoltage(readArray, &samplesReadPerChannel, workerParams.numberOfVoltageSamples, readArraySize);
         if (statusReadVoltage != 0) {
-            std::cout<<"Failed to get Voltage"<<std::endl;
+            std::sprintf(logString, "Failed to get Voltage");
+            log(logString, ERROR);
             free(readArray);
             workerParams.statusWorker = -1;
             return -1;
         }
         getMeanRAAndDEC(readArray, readArraySize, samplesReadPerChannel, &meanRA, &meanDEC);
-        std::cout << "Mean RA: " << meanRA << std::endl;
-        std::cout << "Mean DEC: " << meanDEC << std::endl;
+        std::sprintf(logString, "Mean RA: %.2f", meanRA);
+        log(logString, INFO);
+        std::sprintf(logString, "Mean DEC: %.2f", meanDEC);
+        log(logString, INFO);
         while (1) {
-            std::cout<<"Position accepted?y/n"<<std::endl;
+            std::sprintf(logString, "Accept as Reference Voltages?y/n");
+            log(logString, PROMPT);
             getline(std::cin, input);
             if (input[0] == 'Y' || input[0] == 'y') {
                 inputAccepted = true;
+                workerParams.raReferenceVoltage = meanRA;
+                workerParams.decReferenceVoltage = meanDEC;
                 break;
             }
             if (input[0] == 'N' || input[0] == 'n') {
@@ -370,15 +425,19 @@ int closedLoop(){
     }
     pauseLoop = false;
     myHandle = CreateThread(0, 0, closedLoopThread, &workerParams, 0, &myThreadID);
-    std::cout<<"Press q to quit close loop operation."<<std::endl;
+    std::sprintf(logString, "Press q to quit close loop operation.");
+    log(logString, PROMPT);
     while(slopeString[0] != 'q' ) {
         if (pauseLoop == true && (slopeString[0] == 'c' || slopeString[0]== 'C')) {
             pauseLoop = false;
+            enableMotor(1);
+            enableMotor(2);
         }
         getline(std::cin, slopeString);
     }
     CloseHandle(myHandle);
-    std::cout<<"Finishing the Closed Loop Process"<<std::endl;
+    std::sprintf(logString, "Finishing the Closed Loop Process.");
+    log(logString, PROMPT);
     exitMotor(raMotorNum);
     disableMotor(raMotorNum);
     exitMotor(decMotorNum);
@@ -390,16 +449,20 @@ int closedLoop(){
 }
 
 int calibrateChannel(int motorNum, const char deviceName[], int mode) {
-    std::cout<<"Samples Input Mode: "<<mode<<std::endl;
+    std::sprintf(logString, "Samples Input Mode: %d", mode);
+    log(logString, INFO);
     int comPortNum, frequency, count, step, direction, numOfVoltageSamples;
     int64 readArraySize;
     int32 samplesReadPerChannel = 0;
     std::string input, numOfVoltageSamplesString;
-    std::cout<<"Enter the COM Port number: "<<std::endl;
+    std::sprintf(logString, "Enter the COM Port number: ");
+    log(logString, PROMPT);
     getline(std::cin, input);
     comPortNum = std::atoi(input.c_str());
     int status = CreateControllerConnection(comPortNum);
     if (status != 0) {
+        std::sprintf(logString, "Unable to connect to motor");
+        log(logString, ERROR);
         std::cout<<"Unable to connect to motor"<<std::endl;
         return -1;
     }
@@ -407,13 +470,17 @@ int calibrateChannel(int motorNum, const char deviceName[], int mode) {
     std::string countString;
     std::string stepsString;
     std::string directionString;
-    std::cout<<"Enter the raFrequency of motor: "<<std::endl;
+    std::sprintf(logString, "Enter the raFrequency of motor: ");
+    log(logString, PROMPT);
     getline(std::cin, frequencyString);
-    std::cout<<"Enter the total counts to move: "<<std::endl;
+    std::sprintf(logString, "Enter the total counts to move: ");
+    log(logString, PROMPT);
     getline(std::cin, countString);
-    std::cout<<"Enter the step size in counts: "<<std::endl;
+    std::sprintf(logString, "Enter the step size in counts: ");
+    log(logString, PROMPT);
     getline(std::cin, stepsString);
-    std::cout<<"Enter the motor direction: "<<std::endl;
+    std::sprintf(logString, "Enter the motor direction: ");
+    log(logString, PROMPT);
     getline(std::cin, directionString);
     frequency = std::atoi(frequencyString.c_str());
     count = std::atoi(countString.c_str());
@@ -421,27 +488,31 @@ int calibrateChannel(int motorNum, const char deviceName[], int mode) {
     direction = std::atoi(directionString.c_str());
     int statusMotorEnable = enableMotor(motorNum);
     if (statusMotorEnable != 0) {
-        std::cout<<"Failed to Enable Motor"<<std::endl;
+        std::sprintf(logString, "Failed to Enable Motor");
+        log(logString, ERROR);
         closeControllerConnection();
         return -2;
     }
     int statusMotorFrequency = setMotorFrequency(motorNum, frequency);
     if (statusMotorFrequency != 0) {
-        std::cout<<"Failed to Set Motor Frequency"<<std::endl;
+        std::sprintf(logString, "Failed to Set Motor Frequency");
+        log(logString, ERROR);
         disableMotor(motorNum);
         closeControllerConnection();
         return -3;
     }
     int statusDaQTask = createDAQTask();
     if (statusDaQTask != 0) {
-        std::cout<<"Failed to Create DaQ Task"<<std::endl;
+        std::sprintf(logString, "Failed to Create DaQ Task");
+        log(logString, ERROR);
         disableMotor(motorNum);
         closeControllerConnection();
         return -4;
     }
     int statusInitDaQChain = initDAQAIChan(deviceName);
     if (statusInitDaQChain != 0) {
-        std::cout<<"Failed to Create DaQ Task"<<std::endl;
+        std::sprintf(logString, "Failed to init DaQ chain");
+        log(logString, ERROR);
         disableMotor(motorNum);
         closeControllerConnection();
         clearDAQTask();
@@ -449,13 +520,15 @@ int calibrateChannel(int motorNum, const char deviceName[], int mode) {
     }
     int statusStartDaQTask = startDAQTask();
     if (statusStartDaQTask != 0) {
-        std::cout<<"Failed to Start DaQ Task"<<std::endl;
+        std::sprintf(logString, "Failed to Start DaQ Task");
+        log(logString, ERROR);
         disableMotor(motorNum);
         closeControllerConnection();
         clearDAQTask();
         return -6;
     }
-    std::cout<<"Enter number of Voltage Samples to Get:"<<std::endl;
+    std::sprintf(logString, "Enter number of Voltage Samples to Get:");
+    log(logString, PROMPT);
     getline(std::cin, numOfVoltageSamplesString);
     numOfVoltageSamples = std::atoi(numOfVoltageSamplesString.c_str());
     float64 *readArray = NULL;
@@ -472,7 +545,8 @@ int calibrateChannel(int motorNum, const char deviceName[], int mode) {
         readArray = (float64*)calloc( readArraySize, sizeof(float64));
         int statusReadVoltage = getVoltage(readArray, &samplesReadPerChannel, numOfVoltageSamples, readArraySize);
         if (statusReadVoltage != 0) {
-            std::cout<<"Failed to get Voltage"<<std::endl;
+            std::sprintf(logString, "Failed to get Voltage");
+            log(logString, ERROR);
             exitMotor(motorNum);
             disableMotor(motorNum);
             closeControllerConnection();
@@ -481,14 +555,18 @@ int calibrateChannel(int motorNum, const char deviceName[], int mode) {
             free(readArray);
             return -7;
         }
-        std::cout<<totalSteps;
+        char data[100000];
+        char data_point[100];
+        _itoa_s(totalSteps, data, 10);
         for (int i=0; i <  readArraySize; i++) {
-            std::cout << "  " << readArray[i] * 1000;
+            std::sprintf(data_point, "  %.2f", readArray[i] * 1000);
+            std::strcat(data, data_point);
         }
-        std::cout<<std::endl;
+        log(data, INFO);
         statusSetMotorCount = setMotorCount(motorNum, direction, step);
         if (statusSetMotorCount != 0) {
-            std::cout<<"Failed to move Motor"<<std::endl;
+            std::sprintf(logString, "Failed to move Motor");
+            log(logString, ERROR);
             exitMotor(motorNum);
             disableMotor(motorNum);
             closeControllerConnection();
@@ -504,7 +582,8 @@ int calibrateChannel(int motorNum, const char deviceName[], int mode) {
     }
     statusSetMotorCount = setMotorCount(motorNum, -direction, totalSteps);
     if (statusSetMotorCount != 0) {
-        std::cout<<"Failed to move Motor back to initial position"<<std::endl;
+        std::sprintf(logString, "Failed to move Motor back to initial position");
+        log(logString, ERROR);
         exitMotor(motorNum);
         disableMotor(motorNum);
         closeControllerConnection();
@@ -513,7 +592,8 @@ int calibrateChannel(int motorNum, const char deviceName[], int mode) {
         return -9;
     }
     Sleep(goBackTime * 2);
-    std::cout<<"Test Successfully Completed"<<std::endl;
+    std::sprintf(logString, "Test Successfully Completed.");
+    log(logString, PROMPT);
     exitMotor(motorNum);
     disableMotor(motorNum);
     closeControllerConnection();

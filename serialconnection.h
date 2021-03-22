@@ -8,6 +8,7 @@
 #include <windows.h>
 #include <string>
 #include <stdlib.h>
+#include "utilheaders.h"
 
 extern HANDLE serialHandle;
 
