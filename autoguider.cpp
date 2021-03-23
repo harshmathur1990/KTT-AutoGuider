@@ -48,9 +48,9 @@ int getCorrection(worker_params workerParams, float64 currMeanRA, float64 currMe
         *decCorrection = correctionVoltageRA * workerParams.decSlope + correctionVoltageDEC * workerParams.decConstant;
         std::sprintf(logString, "correctionVoltageRA:  %.2f correctionVoltageDEC: %.2f", correctionVoltageRA, correctionVoltageDEC);
         log(logString, DEBUG);
-        std::sprintf(logString, "Correction RA:  %.2f", *raCorrection);
+        std::sprintf(logString, "Correction RA:  %d", *raCorrection);
         log(logString, DEBUG);
-        std::sprintf(logString, "Correction DEC:  %.2f", *decCorrection);
+        std::sprintf(logString, "Correction DEC:  %d", *decCorrection);
         log(logString, DEBUG);
     }
     return 0;
@@ -170,7 +170,7 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
                 workerParams.statusWorker = -2;
                 return -2;
             }
-            int64 decCounts = decDirection * RA;
+            int64 decCounts = decDirection * DEC;
             std::sprintf(logString, "Applying counts DEC:  %d", decCounts);
             log(logString, DEBUG);
             statusSetMotorCount = setMotorCount(decMotorNum, decDirection, DEC);
