@@ -11,6 +11,7 @@
 #include "utilheaders.h"
 
 extern bool pauseLoop;
+//extern bool configExist;
 
 typedef struct {
     float64 raSlope, raConstant, raReferenceVoltage, decSlope, decConstant, decReferenceVoltage, loopUpdateTimeInSeconds, pollingTimeInMiliSeconds, kp, ki, kd;

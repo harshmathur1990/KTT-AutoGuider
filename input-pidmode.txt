@@ -1,20 +1,19 @@
-10
-1
-2.136
-0.044
--310
-0.382
-1.894
-291
-1
-350
-350
-200
-1
-50
-200
-200
-1
-0.6
-0.2
-0.11
+0 = logging mode
+10 = mode
+1 = coupled mode
+2.136 = slope RA or 7.22
+0.044 = const RA or 18.88
+0.382 = slope DEC or 3.21
+1.894 = const DEC or 100.94
+1 = COM PORT
+350 = Freq Ra
+350 = Freq DEC
+200 = number of voltage samples
+1 = loop update time
+50 = polling time
+200 = max permissible counts RA
+200 = max permissible counts DEC
+1 = to give your own kp, ki, kd
+0.6 = kp
+0.2 = ki
+0.11 = kd

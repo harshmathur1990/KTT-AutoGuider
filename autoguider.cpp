@@ -5,6 +5,7 @@
 #include "autoguider.h"
 
 bool pauseLoop;
+//bool configExist;
 
 int getCorrection(worker_params workerParams, float64 currMeanRA, float64 currMeanDEC, float64 refCountRA, float64 refCountDEC, float64 *prevErrorVoltageRA, float64 *integralErrorVoltageRA, float64 *curErrorVoltageRA, float64 *deltaErrorVoltageRA, float64 *prevErrorVoltageDEC, float64 *integralErrorVoltageDEC, float64 *curErrorVoltageDEC, float64 *deltaErrorVoltageDEC, int64 *raCorrection, int64 *decCorrection) {
     float64 countRA, countDEC, correctionVoltageRA, correctionVoltageDEC;
@@ -52,6 +53,8 @@ int getCorrection(worker_params workerParams, float64 currMeanRA, float64 currMe
         log(logString, DEBUG);
         std::sprintf(logString, "Correction DEC:  %d", *decCorrection);
         log(logString, DEBUG);
+        *prevErrorVoltageRA = *curErrorVoltageRA;
+        *prevErrorVoltageDEC = *curErrorVoltageDEC;
     }
     return 0;
 }
@@ -61,7 +64,7 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
     std::string input;
     worker_params &workerParams = *(worker_params*)lparam;
     float64 *readArray=NULL, *meanRA=NULL, *meanDEC=NULL, refCountRA, refCountDEC, countRA, countDEC, timeToCompleteMovement=0, prevMeanRA=0, currMeanRA=0, prevMeanDEC=0, currMeanDEC=0, quitCountRA=0, quitCountDEC=0, prevErrorVoltageRA=0, integralErrorVoltageRA=0, curErrorVoltageRA=0, deltaErrorVoltageRA=0, prevErrorVoltageDEC=0, integralErrorVoltageDEC=0, curErrorVoltageDEC=0, deltaErrorVoltageDEC=0;
-    int64 decCorrection, raCorrection, RA=0, DEC=0, raDirection = 1, decDirection = 1, prevRaDirection = -1, prevDecDirection = -1, statusSetMotorCount=0, clock, readArraySize;
+    int64 decCorrection, raCorrection, actRA=0, actDEC=0, RA=0, DEC=0, raDirection = 1, decDirection = 1, prevRaDirection = -1, prevDecDirection = -1, statusSetMotorCount=0, clock, readArraySize;
     const int64 raMotorNum = 2, decMotorNum = 1;
     int32 samplesReadPerChannel=0;
     refCountRA = (workerParams.raReferenceVoltage - workerParams.raConstant) / workerParams.raSlope;
@@ -88,10 +91,10 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
             prevErrorVoltageDEC = 0;
             curErrorVoltageRA = 0;
             curErrorVoltageDEC = 0;
-            exitMotor(1);
-            exitMotor(2);
-            disableMotor(1);
-            disableMotor(2);
+            exitMotor(raMotorNum);
+            exitMotor(decMotorNum);
+            disableMotor(raMotorNum);
+            disableMotor(decMotorNum);
             std::sprintf(logString, "Image out of Sensor, Please readjust and press c");
             log(logString, ERROR);
             while(pauseLoop == true) {
@@ -142,6 +145,7 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
             }
 
             if (RA > abs(workerParams.maxVoltageChangeInMiliVoltsPerSecRA)) {
+                actRA = RA;
                 RA = abs(workerParams.maxVoltageChangeInMiliVoltsPerSecRA);
                 if(prevRaDirection == raDirection)
                     quitCountRA += 1;
@@ -150,6 +154,7 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
                 quitCountRA = 0;
             }
             if (DEC > abs(workerParams.maxVoltageChangeInMiliVoltsPerSecDEC)) {
+                actDEC = DEC;
                 DEC = abs(workerParams.maxVoltageChangeInMiliVoltsPerSecDEC);
                 if (prevDecDirection == decDirection)
                     quitCountDEC += 1;
@@ -161,6 +166,22 @@ DWORD WINAPI closedLoopThread(LPVOID lparam) {
             prevDecDirection = decDirection;
             if (quitCountRA == 3 || quitCountDEC == 3)
                 continue;
+            // Ad hoc correction. What happens is if the image somehow moves
+            // to the other segment, then the corrections would be reverse.
+            // Hence we reverse directions when it is about to quit and amplify the correction
+            // as one last hope. Apparently this works!!.
+            if (quitCountRA == 2) {
+                raDirection *= -1;
+                RA = actRA;
+                std::sprintf(logString, "AdHoc Correction in RA, raDirection: %d, RA: %d", raDirection, RA);
+                log(logString, DEBUG);
+            }
+            if (quitCountDEC == 2) {
+                decDirection *= -1;
+                DEC = actDEC;
+                std::sprintf(logString, "AdHoc Correction in DEC, decDirection: %d, DEC: %d", decDirection, DEC);
+                log(logString, DEBUG);
+            }
             int64 raCounts = raDirection * RA;
             std::sprintf(logString, "Applying counts RA:  %d", raCounts);
             log(logString, DEBUG);
@@ -201,6 +222,19 @@ int getMeanRAAndDEC(float64 *readArray, int64 readArraySize, int32 samplesReadPe
     return 0;
 }
 
+//int readConfigFile(){
+//    fstream configFile;
+//    configFile.open("config.txt",ios::in);
+//    if (newfile.is_open()){   //checking whether the file is open
+//        string tp;
+//        while(getline(newfile, tp)){ //read data from file object and put it into string.
+//
+//        }
+//        newfile.close(); //close the file object.
+//    };
+//    configExist = false;
+//    return -1;
+//}
 int closedLoop(){
     std::string input, slopeString, constantString, referenceVoltageString, numberOfVoltageSamplesString, frequencyString, loopUpdateTimeInSecondsString, pollingTimeInMiliSecondsString, maxVoltageChangeInMiliVoltsPerSecString;
     float64 raSlope, decSlope, raConstant, decConstant, raReferenceVoltage, decReferenceVoltage, maxVoltageChangeInMiliVoltsPerSecRA, maxVoltageChangeInMiliVoltsPerSecDEC, loopUpdateTimeInSeconds, pollingTimeInMiliSeconds;
@@ -387,6 +421,8 @@ int closedLoop(){
     int32 samplesReadPerChannel=0;
     int64 readArraySize;
     readArraySize = numberOfVoltageSamples * 2;
+    disableMotor(raMotorNum);
+    disableMotor(decMotorNum);
     while(1) {
         inputAccepted=false;
         meanRA = 0;
@@ -423,6 +459,8 @@ int closedLoop(){
         free(readArray);
         if (inputAccepted) break;
     }
+    enableMotor(raMotorNum);
+    enableMotor(decMotorNum);
     pauseLoop = false;
     myHandle = CreateThread(0, 0, closedLoopThread, &workerParams, 0, &myThreadID);
     std::sprintf(logString, "Press q to quit close loop operation.");
@@ -580,18 +618,18 @@ int calibrateChannel(int motorNum, const char deviceName[], int mode) {
         totalSteps += step;
         free(readArray);
     }
-    statusSetMotorCount = setMotorCount(motorNum, -direction, totalSteps);
-    if (statusSetMotorCount != 0) {
-        std::sprintf(logString, "Failed to move Motor back to initial position");
-        log(logString, ERROR);
-        exitMotor(motorNum);
-        disableMotor(motorNum);
-        closeControllerConnection();
-        stopDAQTask();
-        clearDAQTask();
-        return -9;
-    }
-    Sleep(goBackTime * 2);
+//    statusSetMotorCount = setMotorCount(motorNum, -direction, totalSteps);
+//    if (statusSetMotorCount != 0) {
+//        std::sprintf(logString, "Failed to move Motor back to initial position");
+//        log(logString, ERROR);
+//        exitMotor(motorNum);
+//        disableMotor(motorNum);
+//        closeControllerConnection();
+//        stopDAQTask();
+//        clearDAQTask();
+//        return -9;
+//    }
+//    Sleep(goBackTime * 2);
     std::sprintf(logString, "Test Successfully Completed.");
     log(logString, PROMPT);
     exitMotor(motorNum);
